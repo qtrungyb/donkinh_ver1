@@ -1038,15 +1038,42 @@ function exportImageFromModal() {
     }
 }
 
-function exportImageFromHtmlString(htmlContent, fileName) {
-    showToast("Đang khởi tạo ảnh...");
+export function exportImageFromHtmlString(htmlContent, fileName) {
+    showToast("Đang khởi tạo ảnh chất lượng cao...");
+    
+    // 1. Tạo container ảo với kích thước chuẩn A5
     const container = document.createElement('div');
-    container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 148mm; background-color: #ffffff; z-index: -1000;';
+    container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 148mm; min-height: 210mm; background-color: #ffffff; z-index: -1000;';
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
+    
+    // 2. Bơm CSS nâng cấp độ sắc nét của chữ
     const styleNode = document.createElement('style');
-    styleNode.innerHTML = `.print-container { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; color: #000; padding: 15mm 10mm; box-sizing: border-box; width: 100%; min-height: 210mm; background: #fff; } .print-container .text-center { text-align: center; } .print-container h2 { font-size: 16pt; margin: 0 0 15px 0; text-transform: uppercase; } .print-container table.print-table { width: 100%; border-collapse: collapse; margin: 10px 0; } .print-container table.print-table th, .print-container table.print-table td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; } .print-container .signature-box { float: right; text-align: center; width: 250px; margin-top: 20px; border: none !important; padding: 0 !important; display: block !important; font-family: 'Times New Roman', serif !important; } .print-container .clearfix::after { content: ""; clear: both; display: table; }`;
+    styleNode.innerHTML = `
+        .print-container { 
+            font-family: 'Times New Roman', serif; 
+            font-size: 13pt; 
+            line-height: 1.3; 
+            color: #000; 
+            padding: 15mm 10mm; 
+            box-sizing: border-box; 
+            width: 100%; 
+            min-height: 210mm; 
+            background: #fff; 
+            
+            /* CSS Tối ưu hóa render font chữ */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: geometricPrecision; 
+        } 
+        .print-container .text-center { text-align: center; } 
+        .print-container h2 { font-size: 16pt; margin: 0 0 15px 0; text-transform: uppercase; } 
+        .print-container table.print-table { width: 100%; border-collapse: collapse; margin: 10px 0; } 
+        .print-container table.print-table th, .print-container table.print-table td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; } 
+        .print-container .signature-box { float: right; text-align: center; width: 250px; margin-top: 20px; border: none !important; padding: 0 !important; display: block !important; font-family: 'Times New Roman', serif !important; } 
+        .print-container .clearfix::after { content: ""; clear: both; display: table; }
+    `;
     container.appendChild(styleNode);
     
     const bodyContent = document.createElement('div');
@@ -1055,14 +1082,20 @@ function exportImageFromHtmlString(htmlContent, fileName) {
     container.appendChild(bodyContent);
     document.body.appendChild(container);
 
+    // Hàm phụ: Ép tải file xuống máy
     function forceDownloadBlob(blob, file_Name, domContainer) {
         const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a'); link.href = blobUrl; link.download = file_Name;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        const link = document.createElement('a'); 
+        link.href = blobUrl; 
+        link.download = file_Name;
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
         showToast("Xuất ảnh thành công!");
     }
 
+    // 3. Khởi chạy thư viện html2canvas sau khi DOM ảo đã sẵn sàng
     setTimeout(() => {
         if (typeof html2canvas === 'undefined') {
             showToast("Thư viện tạo ảnh chưa được tải!", "error");
@@ -1072,18 +1105,33 @@ function exportImageFromHtmlString(htmlContent, fileName) {
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
         
-        html2canvas(container, { scale: isMobile ? 3 : 5, useCORS: true, backgroundColor: '#ffffff' })
-        .then(canvas => {
+        // Tỷ lệ Scale: 4 cho Mobile (chống sập RAM), 5 cho PC (siêu nét)
+        const hdScale = isMobile ? 4 : 5; 
+        
+        html2canvas(container, { 
+            scale: hdScale, 
+            useCORS: true, 
+            backgroundColor: '#ffffff',
+            logging: false // Tắt log để render nhanh hơn một chút
+        }).then(canvas => {
+            
+            // XUẤT RA PNG THAY VÌ JPEG
             canvas.toBlob((blob) => {
                 if (!blob) throw new Error("Lỗi xử lý dữ liệu ảnh");
-                const file = new File([blob], fileName, { type: "image/jpeg" });
+                
+                // Đổi đuôi tên file thành .png
+                const safeFileName = fileName.replace('.jpg', '.png');
+                const file = new File([blob], safeFileName, { type: "image/png" });
                 
                 if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: fileName })
+                    navigator.share({ files: [file], title: safeFileName })
                         .then(() => showToast("Đã chia sẻ ảnh!"))
-                        .catch(err => forceDownloadBlob(blob, fileName, container));
-                } else forceDownloadBlob(blob, fileName, container);
-            }, 'image/jpeg', 0.95);
+                        .catch(err => forceDownloadBlob(blob, safeFileName, container));
+                } else {
+                    forceDownloadBlob(blob, safeFileName, container);
+                }
+            }, 'image/png'); // Mặc định PNG không bị nén mất viền chữ
+            
         }).catch(err => {
             console.error("Lỗi xuất ảnh:", err);
             showToast("Có lỗi xảy ra khi tạo ảnh.", "error");
