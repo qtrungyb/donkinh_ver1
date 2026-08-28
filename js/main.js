@@ -554,18 +554,30 @@ function renderDashboardMore(dataArray) {
 }
 
 function searchKinhDashboard() {
+    // 1. Lấy từ khóa người dùng gõ
     const rawQuery = DOM.dashboard.searchInput.value;
     const queryText = rawQuery.trim().toLowerCase();
     AppState.currentSearchQuery = queryText;
+    
+    // 2. Ẩn/Hiện nút dấu X (xóa text tìm kiếm)
     DOM.dashboard.searchClear.style.display = rawQuery.length > 0 ? 'flex' : 'none';
 
+    // 3. Nếu ô tìm kiếm trống, hiển thị lại toàn bộ danh sách
     if(!queryText) {
         AppState.currentSearchResults = AppState.dashboardAllData;
         AppState.dashboardRenderCount = 0;
+        DOM.dashboard.list.innerHTML = "";
         renderDashboardMore(AppState.dashboardAllData);
         return;
     }
-    const filtered = AppState.dashboardAllData.filter(data => (data.hoTen || "").toLowerCase().includes(queryText) || (data.sdt || "").includes(queryText));
+    
+    // 4. Nếu có từ khóa, lọc theo Tên hoặc Số điện thoại
+    const filtered = AppState.dashboardAllData.filter(data => {
+        return (data.hoTen || "").toLowerCase().includes(queryText) || 
+               (data.sdt || "").includes(queryText);
+    });
+    
+    // 5. Render kết quả ra màn hình
     AppState.currentSearchResults = filtered;
     AppState.dashboardRenderCount = 0;
     DOM.dashboard.list.innerHTML = "";
