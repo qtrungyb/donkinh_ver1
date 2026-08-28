@@ -308,30 +308,6 @@ function setupUIEventListeners() {
             openDetailModal(card.getAttribute('data-index'));
         }
     });
-
-    // Smart Filter Chips Logic
-    document.querySelectorAll('.chip').forEach(chip => {
-        chip.addEventListener('click', function() {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            this.classList.add('active');
-            
-            const filterType = this.getAttribute('data-filter');
-            const todayStr = new Date().toLocaleDateString('vi-VN');
-            let filteredData = AppState.dashboardAllData;
-            
-            if (filterType === 'today') filteredData = AppState.dashboardAllData.filter(d => d.timestamp.includes(todayStr));
-            else if (filterType === 'can') filteredData = AppState.dashboardAllData.filter(d => (d.jsonData.chanDoan || '').toLowerCase().includes('cận'));
-            else if (filterType === 'datrong') filteredData = AppState.dashboardAllData.filter(d => (d.jsonData.loaiKinh === 'Đa tròng' || d.jsonData.loaiKinh_2 === 'Đa tròng'));
-            
-            const searchText = DOM.dashboard.searchInput.value.trim().toLowerCase();
-            if(searchText) filteredData = filteredData.filter(d => (d.hoTen || "").toLowerCase().includes(searchText) || (d.sdt || "").includes(searchText));
-
-            AppState.currentSearchResults = filteredData;
-            AppState.dashboardRenderCount = 0;
-            DOM.dashboard.list.innerHTML = "";
-            renderDashboardMore(filteredData);
-        });
-    });
 }
 
 function setupFormEventListeners() {
@@ -582,9 +558,6 @@ function searchKinhDashboard() {
     const queryText = rawQuery.trim().toLowerCase();
     AppState.currentSearchQuery = queryText;
     DOM.dashboard.searchClear.style.display = rawQuery.length > 0 ? 'flex' : 'none';
-
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('.chip[data-filter="all"]').classList.add('active');
 
     if(!queryText) {
         AppState.currentSearchResults = AppState.dashboardAllData;
