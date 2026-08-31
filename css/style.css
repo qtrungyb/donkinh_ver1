@@ -187,7 +187,67 @@ body {
 .container { max-width: 960px; margin: 0 auto; background: var(--bg-surface); padding: 0; border-radius: var(--radius); position: relative; }
 h2.main-title { font-family: 'Inter', sans-serif !important; font-size: 36px !important; font-weight: 900 !important; letter-spacing: -0.03em !important; color: var(--text-main) !important; margin: 0 0 48px 0 !important; border-bottom: 4px solid var(--text-main) !important; padding-bottom: 16px !important; position: relative; text-align: left; text-transform: uppercase;}
 h2.main-title::before { content: "BIỂU MẪU LÂM SÀNG"; display: block; font-size: 10px !important; font-weight: 800 !important; letter-spacing: 0.25em !important; color: var(--text-muted); margin-bottom: 12px; line-height: 1; text-transform: uppercase; }
+/* --- BẮT ĐẦU: CSS CHO STICKY PATIENT HEADER --- */
+.sticky-patient-header {
+    position: sticky;
+    top: 73px; /* Nằm ngay dưới thanh Top Nav */
+    background: var(--bg-surface);
+    padding: 12px 24px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    z-index: 850;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    
+    /* Mặc định ẩn */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
+[data-theme="dark"] .sticky-patient-header {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Class được JS thêm vào khi cuộn */
+.sticky-patient-header.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.sticky-patient-info {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sticky-patient-info span { 
+    color: var(--accent-color); 
+    font-size: 15px; 
+    margin-left: 4px;
+}
+
+.sticky-patient-meta {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.sticky-patient-meta span {
+    color: var(--text-main);
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    font-weight: 800;
+}
+/* --- KẾT THÚC: CSS CHO STICKY PATIENT HEADER --- */
 .section-group { margin-bottom: 56px; }
 .section-title { font-size: 14px; text-transform: uppercase; color: var(--text-main); font-weight: 800; letter-spacing: 0.05em; margin-bottom: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 6px; }
 label { display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-main); margin-bottom: 8px; letter-spacing: 0.05em; white-space: nowrap; }
@@ -278,6 +338,28 @@ table.ui-table tbody tr:focus-within { background-color: rgba(0, 0, 0, 0.04); bo
 .btn-danger { background: transparent; border-color: var(--danger-color); color: var(--danger-color); }
 .btn-danger:hover { background: var(--danger-color); color: #ffffff; }
 .btn-block { width: 100%; padding: 16px; font-size: 12px; }
+/* Nút Smart Chips Hẹn Tái Khám */
+.btn-chip {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-chip:hover {
+    background: var(--text-main);
+    color: var(--bg-surface);
+    border-color: var(--text-main);
+    transform: translateY(-2px);
+}
+[data-theme="dark"] .btn-chip:hover {
+    border-color: var(--bg-surface);
+}
 
 /* Thanh Actions Bar ghim đáy Form */
 #formView { padding-bottom: 120px; } 
