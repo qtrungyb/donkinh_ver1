@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn Kính Điện Tử</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0284c7; --primary-light: #e0f2fe; --text-main: #0f172a; --text-muted: #64748b; --bg-color: #f1f5f9; --card-bg: #ffffff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); background-image: linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; color: var(--text-main); }
+        .glass-card { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 24px; box-shadow: 0 20px 40px -10px rgba(2, 132, 199, 0.15); overflow: hidden; position: relative; animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .card-header { background: var(--primary); color: #ffffff; padding: 30px 24px; text-align: center; position: relative; }
+        .card-header::after { content: ''; position: absolute; bottom: -15px; left: 0; width: 100%; height: 30px; background: var(--card-bg); border-radius: 50% 50% 0 0; }
+        .card-title { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; margin: 0; }
+        .card-body { padding: 20px 24px 30px 24px; }
+        .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px dashed #cbd5e1; }
+        .info-group { display: flex; flex-direction: column; gap: 4px; }
+        .info-group.full-width { grid-column: 1 / -1; }
+        .label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .value { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .value.name { font-size: 20px; font-weight: 900; color: var(--primary); }
+        .eye-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .eye-row { background: var(--primary-light); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+        .eye-badge { background: var(--primary); color: #fff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; flex-shrink: 0; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3); }
+        .eye-metrics { display: flex; flex-direction: column; }
+        .eye-metrics .label { color: var(--primary); margin-bottom: 2px; }
+        .eye-metrics .value { font-family: "Courier New", Courier, monospace; font-size: 16px; font-weight: 800; letter-spacing: -0.5px; }
+        .pd-box { text-align: center; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <div class="glass-card">
+        <div class="card-header">
+            <!-- Đã bỏ tên Bệnh viện, chỉ giữ lại chữ ĐƠN KÍNH -->
+            <div class="card-title">ĐƠN KÍNH</div>
+        </div>
+        <div class="card-body">
+            <div class="patient-info">
+                <div class="info-group full-width">
+                    <span class="label">Họ và tên</span>
+                    <span class="value name" id="p-name">Đang tải...</span>
+                </div>
+                <div class="info-group">
+                    <span class="label">Ngày khám</span>
+                    <span class="value" id="p-date">--/--/----</span>
+                </div>
+                <div class="info-group">
+                    <span class="label">Tuổi</span>
+                    <span class="value" id="p-age">--</span>
+                </div>
+            </div>
+            <div class="eye-grid">
+                <div class="eye-row">
+                    <div class="eye-badge">MP</div>
+                    <div class="eye-metrics">
+                        <span class="label">SPH / CYL x AXIS</span>
+                        <span class="value" id="p-mp">---</span>
+                    </div>
+                </div>
+                <div class="eye-row">
+                    <div class="eye-badge">MT</div>
+                    <div class="eye-metrics">
+                        <span class="label">SPH / CYL x AXIS</span>
+                        <span class="value" id="p-mt">---</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pd-box">
+                <span class="label">Khoảng cách đồng tử (PD)</span>
+                <div class="value" style="font-size: 20px; color: var(--primary); margin-top: 4px;">
+                    <span id="p-pd">--</span> <span style="font-size: 14px;">mm</span>
+                </div>
+            </div>
+            <!-- Đã bỏ nút liên hệ bác sĩ tư vấn -->
+        </div>
+    </div>
+
+    <!-- SCRIPT TỰ ĐỘNG BẮT THÔNG SỐ TỪ MÃ QR ĐỂ HIỂN THỊ -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const getParam = (key, fallback = "---") => {
+                const val = urlParams.get(key);
+                return val ? decodeURIComponent(val) : fallback;
+            };
+
+            document.getElementById('p-name').textContent = getParam('ten', 'Khách Hàng');
+            document.getElementById('p-date').textContent = getParam('ngay', '--/--/----');
+            document.getElementById('p-age').textContent = getParam('tuoi', '--');
+            document.getElementById('p-mp').textContent = getParam('mp');
+            document.getElementById('p-mt').textContent = getParam('mt');
+            document.getElementById('p-pd').textContent = getParam('pd', '--');
+        });
+    </script>
+</body>
+</html>

@@ -144,7 +144,15 @@
             <h2 class="main-title">
                 <span id="formTitle">Tạo Đơn Kính Mới</span>
             </h2>
-            
+            <!-- STICKY HEADER: Bám đỉnh khi cuộn form -->
+            <div id="stickyPatientHeader" class="sticky-patient-header">
+                <div class="sticky-patient-info">
+                    ĐANG KÊ ĐƠN: <span id="stickyName">---</span>
+                </div>
+                <div class="sticky-patient-meta">
+                    Tuổi: <span id="stickyAge">--</span>
+                </div>
+            </div>
             <form id="donKinhForm">
                 <!-- KHỐI 1: THÔNG TIN BỆNH NHÂN -->
                 <div class="section-group">
@@ -251,9 +259,20 @@
                     </div>
 
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                        <label>Ghi chú</label><input type="text" id="ghiChu" placeholder="Nhập lưu ý thêm...">
+                        <label>Ghi chú & Lịch hẹn</label>
+                        <div class="input-clear-wrapper">
+                            <input type="text" id="ghiChu" placeholder="Nhập lưu ý thêm hoặc chọn lịch tái khám bên dưới..." autocomplete="off">
+                            <span class="clear-btn" data-target="ghiChu">&times;</span>
+                        </div>
+                        
+                        <!-- Dải Smart Chips Tái Khám -->
+                        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;" id="followUpChips">
+                            <button type="button" class="btn-chip" data-days="7">+1 Tuần</button>
+                            <button type="button" class="btn-chip" data-months="1">+1 Tháng</button>
+                            <button type="button" class="btn-chip" data-months="3">+3 Tháng</button>
+                            <button type="button" class="btn-chip" data-months="6">+6 Tháng</button>
+                        </div>
                     </div>
-                </div>
 
                 <div class="date-signature">
                     <div class="signature-box">
