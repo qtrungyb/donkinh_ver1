@@ -1182,3 +1182,15 @@ export function exportImageFromHtmlString(htmlContent, fileName) {
         });
     }, 500); 
 }
+// Đăng ký Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker đăng ký thành công với scope: ', registration.scope);
+            })
+            .catch(err => {
+                console.error('ServiceWorker đăng ký thất bại: ', err);
+            });
+    });
+}
