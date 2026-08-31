@@ -9,7 +9,6 @@
  * @param {Object|null} customData - Dữ liệu truyền vào (Nếu null sẽ tự lấy từ DOM)
  */
 export function generatePrintHtml(customData = null) {
-    // Hàm phụ trợ: Lấy giá trị theo ID
     const getVal = id => { 
         if (customData) { 
             if(id === 'kcDongTu_1' && customData[id] === undefined && customData['kcDongTu']) {
@@ -20,7 +19,6 @@ export function generatePrintHtml(customData = null) {
         return document.getElementById(id) ? document.getElementById(id).value : ""; 
     };
 
-    // Hàm phụ trợ: Lấy giá trị của Radio Buttons và render thành icon
     const getRadioIcons = (name, options) => { 
         let val = ""; 
         if (customData) { 
@@ -35,7 +33,6 @@ export function generatePrintHtml(customData = null) {
         return options.map(opt => (opt === val ? "☑ " : "☐ ") + opt).join("&nbsp;&nbsp;&nbsp;&nbsp;"); 
     };
 
-    // Hàm phụ trợ: Render dòng Thị lực
     const buildV = (label, mp, mt) => { 
         const vMp = String(getVal(mp)).trim(); 
         const vMt = String(getVal(mt)).trim(); 
@@ -43,7 +40,6 @@ export function generatePrintHtml(customData = null) {
         return `<tr><td style="width: 160px; border: none; padding: 3px 0; text-align: left;">${label}:</td><td style="width: 120px; border: none; padding: 3px 0; text-align: left;">${vMp ? '<b>MP:</b> ' + vMp : ''}</td><td style="border: none; padding: 3px 0; text-align: left;">${vMt ? '<b>MT:</b> ' + vMt : ''}</td></tr>`; 
     };
 
-    // Chuẩn bị dữ liệu HTML con
     const tlng = String(getVal('tlng')).trim(); 
     const tlngHtml = tlng ? `<tr><td style="border: none; padding: 3px 0; text-align: left;">Thị lực nhìn gần:</td><td colspan="2" style="border: none; padding: 3px 0; text-align: left;">N${tlng}@35cm</td></tr>` : "";
     
@@ -74,8 +70,135 @@ export function generatePrintHtml(customData = null) {
         fNam = dateObj.getFullYear(); 
     }
 
-    // Trả về chuỗi HTML gốc
-    return `<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>In Đơn Kính</title><style>@page { size: A5; margin: 15mm 10mm; } body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; color: #000; margin: 0; padding: 0; } @media screen { html, body { width: 100%; height: 100%; overflow-x: hidden; } body { padding: 15mm 10mm; box-sizing: border-box; } } .text-center { text-align: center; } h2 { font-size: 16pt; margin: 0 0 15px 0; text-transform: uppercase; } table.print-table { width: 100%; border-collapse: collapse; margin: 10px 0; } table.print-table th, table.print-table td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; } .signature-box { float: right; text-align: center; width: 250px; margin-top: 20px; } .clearfix::after { content: ""; clear: both; display: table; }</style></head><body><div style="color: #777; font-size: 11pt; margin-bottom: 10px;"><div style="font-weight: bold;">BỆNH VIỆN ĐA KHOA TRƯỜNG ĐỨC</div><div style="font-weight: bold;">Phòng khám Mắt</div></div><h2 class="text-center" style="margin-top: -10px;">ĐƠN KÍNH</h2><div style="margin-bottom: 6px;">Họ và tên: <b>${getVal('hoTen')}</b> &nbsp;&nbsp;&nbsp; Tuổi: ${getVal('tuoi')} &nbsp;&nbsp;&nbsp; Giới: ${getVal('gioi')}</div><div style="margin-bottom: 6px;">Địa chỉ: ${getVal('diaChi')}</div><div style="margin-bottom: 12px;">SĐT: ${getVal('sdt')}</div><div style="margin-bottom: 12px;">Chẩn đoán: <b>${getVal('chanDoan')}</b></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">${buildV("Thị lực không kính", "tlkk_mp", "tlkk_mt")}${buildV("Thị lực kính lỗ", "tlkl_mp", "tlkl_mt")}${buildV("Thị lực kính cũ", "tlkc_mp", "tlkc_mt")}${tlngHtml}</table>${titleKinh1Html}<div style="margin-bottom: 6px;">Đơn kính: &nbsp;&nbsp;&nbsp; ${getRadioIcons('donKinh_1', ['Nhìn xa', 'Nhìn gần'])}</div><div style="margin-bottom: 10px;">Loại kính: &nbsp;&nbsp;&nbsp; ${getRadioIcons('loaiKinh_1', ['Một tròng', 'Hai tròng', 'Đa tròng'])}</div><table class="print-table"><tr><th>Mắt</th><th>Độ cầu</th><th>Độ trụ</th><th>Trục</th><th>Thị lực</th></tr><tr><td><b>MP</b></td><td>${getVal('mp_cau')}</td><td>${getVal('mp_tru')}</td><td>${getVal('mp_truc')}</td><td>${getVal('mp_gc')}</td></tr><tr><td><b>MT</b></td><td>${getVal('mt_cau')}</td><td>${getVal('mt_tru')}</td><td>${getVal('mt_truc')}</td><td>${getVal('mt_gc')}</td></tr></table>${pd1Html} ${block2Html}<div style="margin-top: 15px;">Ghi chú: ${getVal('ghiChu')}</div><div class="clearfix"><div class="signature-box"><div style="margin-bottom: 5px;">Ngày ${fNgay} tháng ${fThang} năm ${fNam}</div><div><b>Người khám</b></div><div style="height: 70px; display: flex; align-items: center; justify-content: center;"><img src="chukyso.jpg" style="max-height: 60px; max-width: 100%; object-fit: contain;"></div><div><b>${getVal('bsKham')}</b></div></div></div></body></html>`;
+    // ========================================================================
+    // TẠO MÃ QR: GÓI THÔNG SỐ VÀO ĐƯỜNG LINK FIREBASE
+    // ========================================================================
+    const removeVietnameseTones = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+    };
+    
+    const hoTenQR = removeVietnameseTones(String(getVal('hoTen')).trim()) || "KHACH";
+    const sdtVal = String(getVal('sdt')).trim() || "---"; 
+    const pdVal = String(getVal('kcDongTu_1')).trim().replace('mm', ''); 
+    const tuoiVal = String(getVal('tuoi')).trim() || "--"; 
+    const ngayKhamStr = `${fNgay}/${fThang}/${fNam}`; 
+    
+    const buildEyeStr = (cauId, truId, trucId) => {
+        const cau = String(getVal(cauId)).trim();
+        const tru = String(getVal(truId)).trim();
+        const truc = String(getVal(trucId)).trim().replace(/°/g, ""); 
+        
+        if (!cau && !tru) return "0.00"; 
+        
+        let str = cau || "+0.00";
+        if (tru && tru !== "0.00" && tru !== "0" && tru !== "+0.00" && tru !== "-0.00") {
+            str += `/${tru}`;
+            if (truc) str += `x${truc}`; 
+        }
+        return str;
+    };
+
+    const mpText = buildEyeStr('mp_cau', 'mp_tru', 'mp_truc');
+    const mtText = buildEyeStr('mt_cau', 'mt_tru', 'mt_truc');
+
+    const urlParams = new URLSearchParams({
+        ten: hoTenQR,
+        tuoi: tuoiVal,
+        sdt: sdtVal,
+        mp: mpText,
+        mt: mtText,
+        pd: pdVal,
+        ngay: ngayKhamStr
+    });
+
+    const BASE_URL = "https://donkinh-eea6b.web.app/don-kinh.html"; 
+    const safeQrData = `${BASE_URL}?${urlParams.toString()}`;
+
+    return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <title>In Đơn Kính</title>
+    <style>
+        @page { size: A5; margin: 15mm 10mm; } 
+        body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.3; color: #000; margin: 0; padding: 0; } 
+        @media screen { 
+            html, body { width: 100%; height: 100%; overflow-x: hidden; } 
+            body { padding: 15mm 10mm; box-sizing: border-box; } 
+        } 
+        table.print-table { width: 100%; border-collapse: collapse; margin: 10px 0; } 
+        table.print-table th, table.print-table td { border: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; } 
+        .signature-box { float: right; text-align: center; width: 250px; margin-top: 20px; } 
+        .clearfix::after { content: ""; clear: both; display: table; }
+    </style>
+    <!-- Nhúng thư viện QRious -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body>
+    
+    <!-- KHU VỰC HEADER CĂN CHỈNH LẠI MỚI -->
+    <div style="position: relative; margin-bottom: 20px;">
+        <!-- Tên bệnh viện góc trái -->
+        <div style="color: #777; font-size: 11pt;">
+            <div style="font-weight: bold;">BỆNH VIỆN ĐA KHOA TRƯỜNG ĐỨC</div>
+            <div style="font-weight: bold;">Phòng khám Mắt</div>
+        </div>
+        
+        <!-- Mã QR cố định ở góc trên bên phải (không chiếm dụng không gian của tiêu đề) -->
+        <div style="position: absolute; top: 0; right: 0;">
+            <canvas id="qrcode" style="width: 75px; height: 75px; display: block;" title="Mã quét thông số cắt kính"></canvas>
+        </div>
+
+        <!-- Tiêu đề ĐƠN KÍNH căn giữa trang -->
+        <h2 style="margin: 10px 0 0 0; text-transform: uppercase; font-size: 18pt; text-align: center;">ĐƠN KÍNH</h2>
+    </div>
+
+    <div style="margin-bottom: 6px;">Họ và tên: <b>${getVal('hoTen')}</b> &nbsp;&nbsp;&nbsp; Tuổi: ${getVal('tuoi')} &nbsp;&nbsp;&nbsp; Giới: ${getVal('gioi')}</div>
+    <div style="margin-bottom: 6px;">Địa chỉ: ${getVal('diaChi')}</div>
+    <div style="margin-bottom: 12px;">SĐT: ${getVal('sdt')}</div>
+    <div style="margin-bottom: 12px;">Chẩn đoán: <b>${getVal('chanDoan')}</b></div>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+        ${buildV("Thị lực không kính", "tlkk_mp", "tlkk_mt")}
+        ${buildV("Thị lực kính lỗ", "tlkl_mp", "tlkl_mt")}
+        ${buildV("Thị lực kính cũ", "tlkc_mp", "tlkc_mt")}
+        ${tlngHtml}
+    </table>
+    ${titleKinh1Html}
+    <div style="margin-bottom: 6px;">Đơn kính: &nbsp;&nbsp;&nbsp; ${getRadioIcons('donKinh_1', ['Nhìn xa', 'Nhìn gần'])}</div>
+    <div style="margin-bottom: 10px;">Loại kính: &nbsp;&nbsp;&nbsp; ${getRadioIcons('loaiKinh_1', ['Một tròng', 'Hai tròng', 'Đa tròng'])}</div>
+    <table class="print-table">
+        <tr><th>Mắt</th><th>Độ cầu</th><th>Độ trụ</th><th>Trục</th><th>Thị lực</th></tr>
+        <tr><td><b>MP</b></td><td>${getVal('mp_cau')}</td><td>${getVal('mp_tru')}</td><td>${getVal('mp_truc')}</td><td>${getVal('mp_gc')}</td></tr>
+        <tr><td><b>MT</b></td><td>${getVal('mt_cau')}</td><td>${getVal('mt_tru')}</td><td>${getVal('mt_truc')}</td><td>${getVal('mt_gc')}</td></tr>
+    </table>
+    ${pd1Html} 
+    ${block2Html}
+    <div style="margin-top: 15px;">Ghi chú: ${getVal('ghiChu')}</div>
+    <div class="clearfix">
+        <div class="signature-box">
+            <div style="margin-bottom: 5px;">Ngày ${fNgay} tháng ${fThang} năm ${fNam}</div>
+            <div><b>Người khám</b></div>
+            <div style="height: 70px; display: flex; align-items: center; justify-content: center;">
+                <img src="chukyso.jpg" style="max-height: 60px; max-width: 100%; object-fit: contain;">
+            </div>
+            <div><b>${getVal('bsKham')}</b></div>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            try {
+                new QRious({
+                    element: document.getElementById("qrcode"),
+                    value: "${safeQrData}",
+                    size: 250,
+                    level: "M" 
+                });
+            } catch(e) { console.error("Lỗi vẽ QR Code:", e); }
+        };
+    </script>
+</body>
+</html>`;
 }
 
 

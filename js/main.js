@@ -296,7 +296,28 @@ function setupUIEventListeners() {
             else if (DOM.modal.overlay.style.display === 'flex') DOM.modal.btnPrint.click();
         }
     });
+    // --- LẮNG NGHE SỰ KIỆN CUỘN CHO STICKY HEADER ---
+    const stickyHeader = document.getElementById('stickyPatientHeader');
+    const stickyName = document.getElementById('stickyName');
+    const stickyAge = document.getElementById('stickyAge');
     
+    window.addEventListener('scroll', function() {
+        // Chỉ kích hoạt khi biểu mẫu Form đang hiển thị
+        if (DOM.views.form.style.display === 'block' && stickyHeader) {
+            const nameInput = DOM.form.hoTen.value.trim();
+            
+            // Nếu đã nhập tên và cuộn qua mốc 250px (qua khỏi phần thông tin bệnh nhân đầu form)
+            if (nameInput && window.scrollY > 250) {
+                stickyName.innerText = nameInput;
+                stickyAge.innerText = DOM.form.tuoi.value || '--';
+                stickyHeader.classList.add('is-visible');
+            } else {
+                // Cuộn ngược lên đầu trang thì ẩn đi
+                stickyHeader.classList.remove('is-visible');
+            }
+        }
+    });
+    // -------------------------------------------------
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('clear-btn')) {
             const targetId = e.target.getAttribute('data-target');
@@ -443,6 +464,42 @@ function setupFormEventListeners() {
         }
     });
     DOM.form.kcDongTu2.addEventListener('input', function() { this.dataset.manual = this.value.trim() !== "" ? "true" : "false"; });
+// --- BẮT ĐẦU: LOGIC SMART CHIPS HẸN TÁI KHÁM ---
+    document.querySelectorAll('.btn-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            const ghiChuInput = document.getElementById('ghiChu');
+            const currentGhiChu = ghiChuInput.value.trim();
+            
+            // 1. Lấy ngày khám gốc từ form (hoặc hôm nay nếu form trống)
+            let baseDateInput = document.getElementById('ngayKham').value;
+            let baseDate = baseDateInput ? new Date(baseDateInput) : new Date();
+            
+            // 2. Lấy số ngày/tháng cần cộng từ thuộc tính data của nút
+            const addDays = parseInt(this.getAttribute('data-days'));
+            const addMonths = parseInt(this.getAttribute('data-months'));
+            
+            if (addDays) baseDate.setDate(baseDate.getDate() + addDays);
+            if (addMonths) baseDate.setMonth(baseDate.getMonth() + addMonths);
+            
+            // 3. Format lại ngày thành định dạng chuẩn DD/MM/YYYY
+            const dd = String(baseDate.getDate()).padStart(2, '0');
+            const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = baseDate.getFullYear();
+            
+            const textToAppend = `Hẹn tái khám sau ${this.innerText.replace('+', '')} (ngày ${dd}/${mm}/${yyyy}).`;
+            
+            // 4. Xử lý chuỗi thông minh: Nếu đã có lịch hẹn cũ thì thay thế, nếu chưa có thì nối thêm
+            if (currentGhiChu.includes("Hẹn tái khám")) {
+                ghiChuInput.value = currentGhiChu.replace(/Hẹn tái khám.*/, textToAppend).trim();
+            } else {
+                ghiChuInput.value = currentGhiChu ? `${currentGhiChu} - ${textToAppend}` : textToAppend;
+            }
+            
+            // 5. Kích hoạt sự kiện input để hệ thống tự động lưu nháp (Draft) và hiện nút Xóa (Clear Button)
+            ghiChuInput.dispatchEvent(new Event('input')); 
+            showToast(`Đã thêm lịch: ${dd}/${mm}/${yyyy}`);
+        });
+    });
 }
 
 // ============================================================================
