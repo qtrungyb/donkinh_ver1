@@ -74,7 +74,8 @@ body {
     line-height: 1.5; 
     letter-spacing: -0.01em;
     transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-    
+    transition: background-color 0.15s ease, color 0.15s ease, 
+                border-color 0.3s ease;
     -webkit-touch-callout: none;
     overscroll-behavior-y: none;
 }
@@ -912,4 +913,12 @@ table.ui-table tbody tr:focus-within { background-color: var(--primary-light); b
     transition: background-color 0.3s ease, color 0.3s ease, 
                 border-color 0.3s ease, box-shadow 0.3s ease,
                 transform 0.15s ease;
+}
+/* Toàn bộ phần tử con mượt khi đổi primary */
+.btn-blue, .btn-green, .user-avatar, .badge-new, .toast,
+.result-name::before, .diag-opt:has(input:checked),
+.segmented-control input[type="radio"]:checked + label,
+.login-btn, .custom-checkbox-wrapper input:checked + .custom-checkbox {
+    transition: background-color 0.3s ease, color 0.3s ease, 
+                border-color 0.3s ease, box-shadow 0.3s ease;
 }
