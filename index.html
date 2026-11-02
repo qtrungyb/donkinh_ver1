@@ -13,11 +13,11 @@
             wss://*.firebasedatabase.app 
             https://securetoken.googleapis.com 
             https://identitytoolkit.googleapis.com; 
-        frame-src 'self' blob: data: https://*.firebasedatabase.app;
+        frame-src 'self' blob: data: https://*.firebasedatabase.app; 
         img-src 'self' data: blob:;
     ">
     <title>ĐƠN KÍNH</title>
-    <!-- CẤU HÌNH PWA ĐỂ CÀI ĐẶT THÀNH APP -->
+	<!-- CẤU HÌNH PWA ĐỂ CÀI ĐẶT THÀNH APP -->
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#000000">
     
@@ -100,22 +100,39 @@
             </div>
         </div>
         <div class="nav-actions">
-            <!-- Nút mở bảng màu -->
-            <button class="icon-btn" id="btnOpenThemePicker" title="Giao diện & Màu sắc">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
-                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
-                </svg>
-            </button>
-            <!-- Nút sáng/tối nhanh -->
-            <button class="icon-btn" id="themeToggle" title="Chuyển chế độ Sáng/Tối">
-                <svg viewBox="0 0 24 24">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-            </button>
+            <div class="color-picker-wrapper">
+                <button class="theme-toggle color-toggle" id="colorToggle" title="Đổi màu chủ đạo">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+                        <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+                        <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                        <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
+                    </svg>
+                    MÀU SẮC
+                </button>
+                <div class="color-popover" id="colorPopover">
+                    <div class="color-popover-title">Màu chủ đạo</div>
+                    <div class="color-swatches">
+                        <button class="color-swatch" data-color="#111111" style="background:#111111" title="Đen (Mặc định)"></button>
+                        <button class="color-swatch" data-color="#005cbf" style="background:#005cbf" title="Xanh dương"></button>
+                        <button class="color-swatch" data-color="#059669" style="background:#059669" title="Xanh lá"></button>
+                        <button class="color-swatch" data-color="#dc2626" style="background:#dc2626" title="Đỏ"></button>
+                        <button class="color-swatch" data-color="#7c3aed" style="background:#7c3aed" title="Tím"></button>
+                        <button class="color-swatch" data-color="#ea580c" style="background:#ea580c" title="Cam"></button>
+                        <button class="color-swatch" data-color="#0d9488" style="background:#0d9488" title="Teal"></button>
+                        <button class="color-swatch" data-color="#db2777" style="background:#db2777" title="Hồng"></button>
+                        <button class="color-swatch" data-color="#4f46e5" style="background:#4f46e5" title="Indigo"></button>
+                        <button class="color-swatch" data-color="#d97706" style="background:#d97706" title="Hổ phách"></button>
+                    </div>
+                    <div class="color-custom-row">
+                        <label for="customColorInput">Tùy chỉnh</label>
+                        <input type="color" id="customColorInput" value="#005cbf">
+                    </div>
+                    <button type="button" class="btn-reset-color" id="btnResetColor">↻ Mặc định (Đen/Trắng)</button>
+                </div>
+            </div>
+            <button class="theme-toggle" id="themeToggle">GIAO DIỆN TỐI</button>
         </div>
     </div>
 
@@ -139,36 +156,8 @@
                     <button id="btnCreateNew" class="btn btn-blue" style="padding: 12px 24px; margin: 0;">TẠO ĐƠN MỚI</button>
                 </div>
             </div>
-
-            <!-- STATS BAR -->
-            <div class="stats-bar" id="statsBar">
-                <div class="stat-card">
-                    <div class="stat-label">Tổng bệnh nhân</div>
-                    <div class="stat-value" id="statTotalPatients">0<span class="unit">hồ sơ</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Đơn hôm nay</div>
-                    <div class="stat-value" id="statTodayCount">0<span class="unit">đơn</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Đơn tuần này</div>
-                    <div class="stat-value" id="statWeekCount">0<span class="unit">đơn</span></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Đơn tháng này</div>
-                    <div class="stat-value" id="statMonthCount">0<span class="unit">đơn</span></div>
-                </div>
-            </div>
-
-            <!-- FILTER CHIPS -->
-            <div class="filter-chips" id="filterChips">
-                <button class="filter-chip active" data-filter="all">Tất cả</button>
-                <button class="filter-chip" data-filter="today">Hôm nay</button>
-                <button class="filter-chip" data-filter="week">Tuần này</button>
-                <button class="filter-chip" data-filter="month">Tháng này</button>
-            </div>
-
-            <div class="search-module" style="margin-bottom: 24px;">
+            
+            <div class="search-module" style="margin-bottom: 36px;">
                 <div class="search-box" id="searchBoxContainer">
                     <div class="search-wrapper">
                         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -249,7 +238,7 @@
                         <div class="vision-block"><span class="vision-label">Không kính</span><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MP</span><input type="text" id="tlkk_mp" autocomplete="off"></div><div id="tlkk_mp_Dropdown" class="autocomplete-dropdown"></div></div><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MT</span><input type="text" id="tlkk_mt" autocomplete="off"></div><div id="tlkk_mt_Dropdown" class="autocomplete-dropdown"></div></div></div>
                         <div class="vision-block"><span class="vision-label">Kính lỗ</span><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MP</span><input type="text" id="tlkl_mp" autocomplete="off"></div><div id="tlkl_mp_Dropdown" class="autocomplete-dropdown"></div></div><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MT</span><input type="text" id="tlkl_mt" autocomplete="off"></div><div id="tlkl_mt_Dropdown" class="autocomplete-dropdown"></div></div></div>
                         <div class="vision-block"><span class="vision-label">Kính cũ</span><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MP</span><input type="text" id="tlkc_mp" autocomplete="off"></div><div id="tlkc_mp_Dropdown" class="autocomplete-dropdown"></div></div><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">MT</span><input type="text" id="tlkc_mt" autocomplete="off"></div><div id="tlkc_mt_Dropdown" class="autocomplete-dropdown"></div></div></div>
-                        <div class="vision-block ng"><span class="vision-label">Nhìn gần</span><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">N</span><input type="text" id="tlng" placeholder="..." autocomplete="off"><span class="prefix" style="border-left: 1px solid var(--border-light); border-right: none; width: 60px;">@35cm</span></div><div id="tlng_Dropdown" class="autocomplete-dropdown"></div></div></div>
+                        <div class="vision-block ng"><span class="vision-label">Nhìn gần</span><div class="autocomplete-wrapper"><div class="input-group"><span class="prefix">N</span><input type="text" id="tlng" placeholder="..." autocomplete="off"><span class="prefix" style="border-left: 1px solid var(--border-color); border-right: none; width: 60px;">@35cm</span></div><div id="tlng_Dropdown" class="autocomplete-dropdown"></div></div></div>
                     </div>
                 </div>
 
@@ -257,7 +246,7 @@
                 <div class="section-group">
                     <div class="section-title" style="display: flex; justify-content: space-between; align-items: baseline;">
                         <span>Thông số Đơn kính</span>
-                        <button type="button" id="btnAddKinh2" style="background: transparent; border: 1px solid var(--border-light); font-size: 10px; font-weight: 700; padding: 4px 8px; cursor: pointer; color: var(--text-main); border-radius: var(--radius-sm); text-transform: uppercase;">+ THÊM BẢNG ĐƠN KÍNH 2</button>
+                        <button type="button" id="btnAddKinh2" style="background: transparent; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; padding: 4px 8px; cursor: pointer; color: var(--text-main); border-radius: var(--radius); text-transform: uppercase;">+ THÊM BẢNG ĐƠN KÍNH 2</button>
                     </div>
 
                     <div id="blockKinh1">
@@ -280,13 +269,13 @@
                             <div style="width: 160px;"> <div class="input-group pd-group" style="display: flex; align-items: center;">
                                     <span class="prefix" style="color: var(--text-main); padding-right: 8px; font-size: 13px;">PD <span style="color: var(--danger-color); margin-left: 2px;">*</span></span>
                                     <input type="text" id="kcDongTu_1" placeholder="---" autocomplete="off" style="text-align: center; flex: 1;" class="number-input" data-maxlength="2">
-                                    <span class="prefix" style="border-left: 1px solid var(--border-light); border-right: none; padding-left: 12px; font-weight: 900; color: var(--text-main); font-size: 14px;">mm</span>
+                                    <span class="prefix" style="border-left: 1px solid var(--border-color); border-right: none; padding-left: 12px; font-weight: 900; color: var(--text-main); font-size: 14px;">mm</span>
                                 </div>
                             </div>
                         </div>
 
                     <!-- BẢNG ĐƠN KÍNH 2 TÙY CHỌN -->
-                    <div id="blockKinh2" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--border-light);">
+                    <div id="blockKinh2" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--border-color);">
                         <div style="display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; font-size: 13px; margin-bottom: 15px;">
                             <span>THÔNG SỐ ĐƠN KÍNH 2</span>
                             <span class="remove-block-btn" id="btnRemoveKinh2">Xoá bảng này</span>
@@ -310,13 +299,13 @@
                             <div style="width: 140px;">
                                 <div class="input-group pd-group">
                                     <input type="text" id="kcDongTu_2" placeholder="---" autocomplete="off" style="text-align: center; flex: 1;" class="number-input" data-maxlength="2">
-                                    <span class="prefix" style="border-left: 1px solid var(--border-light); border-right: none; padding-left: 12px;">mm</span>
+                                    <span class="prefix" style="border-left: 1px solid var(--border-color); border-right: none; padding-left: 12px;">mm</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-light);">
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
                         <label>Ghi chú & Lịch hẹn</label>
                         <div class="input-clear-wrapper">
                             <input type="text" id="ghiChu" placeholder="Nhập lưu ý thêm hoặc chọn lịch tái khám bên dưới..." autocomplete="off">
@@ -399,7 +388,7 @@
                 <div id="modalPatientDiag" class="patient-diag-text" style="font-size: 15px; margin-bottom: 12px; line-height: 1.4;">---</div>
                 
                 <div id="modalTypographicGrid"></div>
-				<button class="btn btn-blue" id="modalBtnPreviewMobile" style="display: none; width: 100%; margin-top: 32px; font-weight: 900; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: none; border-radius: var(--radius);">XEM BẢN IN</button>
+				<button class="btn btn-blue" id="modalBtnPreviewMobile" style="display: none; width: 100%; margin-top: 32px; font-weight: 900; box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: none; border-radius: 4px;">XEM BẢN IN</button>
             </div>
         </div>
 
@@ -427,7 +416,6 @@
         </form>
     </div>
 </div>
-
 <!-- MODAL CONTEXT MENU (HAPTIC TOUCH) - BOTTOM SHEET -->
 <div id="hapticContextMenu" class="modal-overlay" style="z-index: 4000; align-items: flex-end; justify-content: center; padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: rgba(0,0,0,0.3);">
     <div class="context-menu-box" style="background: var(--bg-surface); width: 100%; max-width: 380px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: translateY(120%); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
@@ -449,83 +437,6 @@
         
     </div>
 </div>
-
-<!-- MODAL CHỌN GIAO DIỆN & MÀU SẮC -->
-<div id="themePickerModal" class="modal-overlay">
-    <div class="theme-picker-card">
-        <div class="theme-picker-header">
-            <h3>Giao diện & Màu sắc</h3>
-            <button class="theme-picker-close" id="btnCloseThemePicker">×</button>
-        </div>
-
-        <!-- Chế độ sáng/tối -->
-        <div class="theme-section">
-            <div class="theme-section-title">Chế độ hiển thị</div>
-            <div class="theme-mode-grid">
-                <button class="theme-mode-btn" data-mode="light">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-                    Sáng
-                </button>
-                <button class="theme-mode-btn" data-mode="dark">
-                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                    Tối
-                </button>
-                <button class="theme-mode-btn" data-mode="auto">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                    Tự động
-                </button>
-            </div>
-        </div>
-
-        <!-- Màu chủ đạo -->
-        <div class="theme-section">
-            <div class="theme-section-title">Màu chủ đạo</div>
-            <div class="color-swatches">
-                <button class="color-swatch" data-accent="mono" title="Đen trắng"></button>
-                <button class="color-swatch" data-accent="blue" style="--swatch-color:#2563eb" title="Xanh dương"></button>
-                <button class="color-swatch" data-accent="indigo" style="--swatch-color:#4f46e5" title="Chàm"></button>
-                <button class="color-swatch" data-accent="purple" style="--swatch-color:#9333ea" title="Tím"></button>
-                <button class="color-swatch" data-accent="pink" style="--swatch-color:#db2777" title="Hồng"></button>
-                <button class="color-swatch" data-accent="red" style="--swatch-color:#dc2626" title="Đỏ"></button>
-                <button class="color-swatch" data-accent="orange" style="--swatch-color:#ea580c" title="Cam"></button>
-                <button class="color-swatch" data-accent="amber" style="--swatch-color:#d97706" title="Hổ phách"></button>
-                <button class="color-swatch" data-accent="green" style="--swatch-color:#16a34a" title="Lục"></button>
-                <button class="color-swatch" data-accent="teal" style="--swatch-color:#0d9488" title="Teal"></button>
-                <button class="color-swatch" data-accent="cyan" style="--swatch-color:#0891b2" title="Cyan"></button>
-                <button class="color-swatch" data-accent="custom" style="--swatch-color:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)" title="Tùy chỉnh"></button>
-            </div>
-        </div>
-
-        <!-- Tùy chỉnh HSL -->
-        <div class="theme-section" id="customColorSection" style="display: none;">
-            <div class="theme-section-title">Tùy chỉnh màu</div>
-            <div class="custom-color-row">
-                <div class="custom-color-slider">
-                    <label>Sắc độ <span id="hueVal">220°</span></label>
-                    <input type="range" id="customHue" min="0" max="360" value="220">
-                </div>
-                <div class="custom-color-slider">
-                    <label>Độ bão hòa <span id="satVal">85%</span></label>
-                    <input type="range" id="customSat" min="0" max="100" value="85">
-                </div>
-                <div class="custom-color-slider">
-                    <label>Độ sáng <span id="lightVal">52%</span></label>
-                    <input type="range" id="customLight" min="20" max="80" value="52">
-                </div>
-            </div>
-        </div>
-
-        <!-- Preview -->
-        <div class="theme-preview">
-            <button class="btn btn-blue">Nút mẫu</button>
-            <div>
-                <div class="stat-label" style="margin-bottom:2px;">Xem trước</div>
-                <div class="stat-value">1,234</div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- NHÚNG FILE JS CHÍNH CỦA ỨNG DỤNG -->
 <script type="module" src="./js/main.js"></script>
 

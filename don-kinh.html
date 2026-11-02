@@ -17,10 +17,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <style>
+        /* ===== PRIMARY COLOR SYSTEM (được JS ghi đè khi có ?c= trên URL) ===== */
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #026aa2;
+            --primary-contrast: #ffffff;
+            --primary-ultra-light: #e0f2fe;
+            --primary-rgb: 2, 132, 199;
+        }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         
         body { background-color: #f1f5f9; background-image: linear-gradient(135deg, #e0f2fe 0%, #f1f5f9 100%); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; padding: 20px; color: #0f172a; transition: all 0.5s ease; overflow-x: hidden; }
         
+        /* TRẠNG THÁI QUÁ HẠN: cố định màu đỏ — không phụ thuộc theme */
         body.expired { background-image: linear-gradient(135deg, #fef2f2 0%, #f1f5f9 100%); }
         body.expired .card-header { background: #ef4444 !important; }
         body.expired .value.name { color: #ef4444 !important; }
@@ -44,7 +54,7 @@
         
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        .card-header { background: #0284c7; color: #ffffff; padding: 25px 24px; text-align: center; position: relative; transition: background 0.5s ease; }
+        .card-header { background: var(--primary); color: #ffffff; padding: 25px 24px; text-align: center; position: relative; transition: background 0.5s ease; }
         .card-header::after { content: ''; position: absolute; bottom: -15px; left: 0; width: 100%; height: 30px; background: #ffffff; border-radius: 50% 50% 0 0; }
         .card-title { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; margin: 0; text-align: center; color: #ffffff;}
         .card-subtitle { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-top: 4px; }
@@ -58,27 +68,27 @@
         .info-group.full-width { grid-column: 1 / -1; }
         .label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;}
         .value { font-size: 16px; font-weight: 700; color: #0f172a; }
-        .value.name { font-size: 20px; font-weight: 900; color: #0284c7; text-transform: uppercase; }
+        .value.name { font-size: 20px; font-weight: 900; color: var(--primary); text-transform: uppercase; transition: color 0.5s ease; }
         
         .info-row-full { background: #f8fafc; padding: 14px 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: none; }
         .info-row-full.note { background: #fffbeb; border-color: #fde68a; margin-top: 0; margin-bottom: 20px; }
         
         .eye-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-        .eye-row { background: #e0f2fe; border-radius: 12px; padding: 16px; display: flex; align-items: flex-start; gap: 16px; transition: background 0.5s ease; }
-        .eye-badge { background: #0284c7; color: #ffffff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.5s ease; }
+        .eye-row { background: var(--primary-ultra-light); border-radius: 12px; padding: 16px; display: flex; align-items: flex-start; gap: 16px; transition: background 0.5s ease; }
+        .eye-badge { background: var(--primary); color: #ffffff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background 0.5s ease; }
         
         .eye-metrics { display: flex; flex-direction: column; width: 100%; }
-        .eye-metrics .label { color: #0284c7; margin-bottom: 2px; transition: color 0.5s ease; }
+        .eye-metrics .label { color: var(--primary); margin-bottom: 2px; transition: color 0.5s ease; }
         .eye-metrics .value { font-family: "Courier New", Courier, monospace; font-size: 16px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a; }
         
         /* THỊ LỰC NẰM GỌN TRONG TỪNG MẮT Ở MẶT TRƯỚC */
         .vision-stats-inline { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; font-size: 11.5px; color: #64748b; width: 100%; transition: border-color 0.5s ease; }
         .vision-stats-inline b { font-family: "Courier New", Courier, monospace; font-size: 13.5px; margin-left: 4px; }
         .vision-stats-inline b.before { color: #0f172a; }
-        .vision-stats-inline b.after { color: #0284c7; transition: color 0.5s ease; }
+        .vision-stats-inline b.after { color: var(--primary); transition: color 0.5s ease; }
         
         .pd-box { text-align: center; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-        .pd-box .value { color: #0284c7; }
+        .pd-box .value { color: var(--primary); transition: color 0.5s ease; }
 
         /* TRỢ LÝ AI DỊCH ĐƠN KÍNH */
         .ai-box { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 16px; border-radius: 12px; border: 1px solid #bbf7d0; margin-bottom: 20px; }
@@ -90,9 +100,9 @@
         .btn-flip-icon:active { transform: scale(0.9); background: #e2e8f0; }
         .btn-flip-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* NÚT LƯU ẢNH */
-        .btn-download { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); padding: 14px 32px; border-radius: 100px; font-size: 15px; font-weight: 800; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); margin-top: 10px; }
-        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); background: rgba(15, 23, 42, 1); }
+        /* NÚT LƯU ẢNH (dùng màu primary, có kính mờ) */
+        .btn-download { background: rgba(var(--primary-rgb), 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--primary-contrast); border: 1px solid rgba(255, 255, 255, 0.15); padding: 14px 32px; border-radius: 100px; font-size: 15px; font-weight: 800; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); margin-top: 10px; }
+        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 15px 35px rgba(var(--primary-rgb), 0.35); background: var(--primary); }
         .btn-download:active { transform: scale(0.92); }
         .btn-download svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 
@@ -186,7 +196,7 @@
                     
                     <div class="info-row-full" id="box-cd" style="display: block;">
                         <span class="label">Kết luận chẩn đoán</span>
-                        <div class="value" id="p-cd" style="color: #0284c7;">---</div>
+                        <div class="value" id="p-cd" style="color: var(--primary); transition: color 0.5s ease;">---</div>
                     </div>
 
                     <!-- BOX TRỢ LÝ AI (TỰ BIẾN MẤT KHI LƯU ẢNH) -->
@@ -225,6 +235,49 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const urlParams = new URLSearchParams(window.location.search);
+
+            // ========================================================
+            // BƯỚC 1: XỬ LÝ MÀU CHỦ ĐẠO TỪ URL (?c=RRGGBB)
+            // Chạy TRƯỚC khi render dữ liệu để thẻ hiển thị đúng màu ngay
+            // ========================================================
+            (function applyColorFromUrl() {
+                const colorParam = urlParams.get('c');
+                if (!colorParam) return;
+
+                // Lọc sạch chỉ giữ ký tự hex hợp lệ
+                const hex = colorParam.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+                if (hex.length !== 6) return;
+
+                const r = parseInt(hex.substr(0, 2), 16);
+                const g = parseInt(hex.substr(2, 2), 16);
+                const b = parseInt(hex.substr(4, 2), 16);
+
+                // Độ sáng cảm nhận (perceived luminance — công thức W3C)
+                const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                const contrast = lum > 0.55 ? '#000000' : '#ffffff';
+
+                // Màu hover: nếu màu sáng thì tối đi, nếu màu tối thì sáng lên
+                const adjust = v => {
+                    if (lum > 0.7) return Math.max(0, Math.round(v * 0.85));
+                    return Math.min(255, Math.round(v + (255 - v) * 0.15));
+                };
+                const hoverHex = '#' + [r, g, b].map(adjust)
+                    .map(v => v.toString(16).padStart(2, '0')).join('');
+
+                // Nền ultra-light: pha màu với trắng ~92%
+                const ultraLight = `rgb(${Math.round(r + (255 - r) * 0.92)}, ${Math.round(g + (255 - g) * 0.92)}, ${Math.round(b + (255 - b) * 0.92)})`;
+
+                const root = document.documentElement.style;
+                root.setProperty('--primary', '#' + hex);
+                root.setProperty('--primary-hover', hoverHex);
+                root.setProperty('--primary-contrast', contrast);
+                root.setProperty('--primary-ultra-light', ultraLight);
+                root.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+            })();
+
+            // ========================================================
+            // BƯỚC 2: GIẢI MÃ DỮ LIỆU TỪ URL
+            // ========================================================
             let encodedData = urlParams.get('data');
             
             let data = { 
@@ -322,6 +375,12 @@
             const resultImage = document.getElementById('resultImage');
             const btnCloseOverlay = document.getElementById('btnCloseOverlay');
 
+            // Đọc màu primary hiện tại để dùng trong khi clone (phòng html2canvas không resolve CSS var)
+            function getCurrentPrimary() {
+                const v = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+                return v || '#0284c7';
+            }
+
             btnDownload.addEventListener('click', async function() {
                 const originalHtml = btnDownload.innerHTML;
                 btnDownload.innerHTML = 'ĐANG XỬ LÝ...';
@@ -330,6 +389,7 @@
 
                 await document.fonts.ready;
                 const retinaScale = window.devicePixelRatio ? window.devicePixelRatio * 2 : 4;
+                const _primaryColor = getCurrentPrimary();
 
                 html2canvas(flipperContainer, {
                     scale: retinaScale, 
@@ -360,15 +420,22 @@
                         clonedDoc.querySelectorAll('.btn-flip-icon').forEach(btn => btn.remove());
 
                         // 4. Ép màu cứng để giữ sắc độ nét trên IOS/Zalo
+                        //    - Nếu quá hạn: cố định đỏ (#ef4444) — không đổi theo theme
+                        //    - Nếu bình thường: dùng đúng màu primary hiện tại
                         const isExpired = clonedDoc.body.classList.contains('expired');
                         const header = frontCard.querySelector('.card-header');
-                        if(header) { header.style.backgroundColor = isExpired ? '#ef4444' : '#0284c7'; header.style.opacity = '1'; }
+                        if(header) { 
+                            header.style.backgroundColor = isExpired ? '#ef4444' : _primaryColor; 
+                            header.style.opacity = '1'; 
+                        }
                         
                         clonedDoc.querySelectorAll('.eye-badge').forEach(b => {
-                            b.style.backgroundColor = isExpired ? '#ef4444' : '#0284c7'; b.style.boxShadow = 'none'; b.style.opacity = '1';
+                            b.style.backgroundColor = isExpired ? '#ef4444' : _primaryColor; 
+                            b.style.boxShadow = 'none'; 
+                            b.style.opacity = '1';
                         });
                         clonedDoc.querySelectorAll('.vision-stats-inline b.after').forEach(b => {
-                            b.style.color = isExpired ? '#ef4444' : '#0284c7';
+                            b.style.color = isExpired ? '#ef4444' : _primaryColor;
                         });
                         clonedDoc.querySelectorAll('.vision-stats-inline').forEach(v => {
                             v.style.borderTopColor = isExpired ? 'rgba(239, 68, 68, 0.2)' : 'rgba(2, 132, 199, 0.2)';
