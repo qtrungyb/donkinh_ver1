@@ -1,8 +1,8 @@
-// Thay đổi version này mỗi khi bạn đẩy code mới lên Github (VD: 'donkinh-v2', 'donkinh-v3')
-const CACHE_NAME = 'donkinh-ver6.0';
-
-// Danh sách các file cần lưu Cache để chạy offline và tải nhanh
-const urlsToCache = [
+// ============================================================================
+// SERVICE WORKER - Chiến lược Hybrid (Network-first + Cache-first)
+// ============================================================================
+const CACHE_NAME = 'donkinh-v' + Date.now(); // Tự đổi mỗi lần deploy
+const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/don-kinh.html',
@@ -19,71 +19,66 @@ const urlsToCache = [
     '/icon-512x512.png'
 ];
 
-// 1. SỰ KIỆN CÀI ĐẶT (INSTALL)
+// 1. INSTALL
 self.addEventListener('install', event => {
-    // Bắt buộc Service Worker mới kích hoạt ngay lập tức (Không cần chờ)
     self.skipWaiting();
-    
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => {
-                console.log('[Service Worker] Đang tải các file vào Cache:', CACHE_NAME);
-                return cache.addAll(urlsToCache);
-            })
-    );
-});
-
-// 2. SỰ KIỆN KÍCH HOẠT (ACTIVATE) - NƠI "SÁT THỦ" DIỆT CACHE CŨ HOẠT ĐỘNG
-self.addEventListener('activate', event => {
-    // Ép Service Worker kiểm soát tất cả các tab đang mở ngay lập tức
-    event.waitUntil(self.clients.claim());
-
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    // Nếu phát hiện tên Cache khác với CACHE_NAME hiện tại -> Tiêu diệt!
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Đã dọn dẹp Cache cũ:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
+        caches.open(CACHE_NAME).then(cache => {
+            console.log('[SW] Đang cache phiên bản:', CACHE_NAME);
+            return cache.addAll(STATIC_ASSETS).catch(err => {
+                console.warn('[SW] Một vài asset không cache được (bỏ qua):', err);
+            });
         })
     );
 });
 
-// 3. SỰ KIỆN FETCH (CHẶN BẮT YÊU CẦU MẠNG)
+// 2. ACTIVATE — Xóa mọi cache không khớp CACHE_NAME hiện tại
+self.addEventListener('activate', event => {
+    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then(names => Promise.all(
+            names.filter(n => n !== CACHE_NAME).map(n => {
+                console.log('[SW] Xóa cache cũ:', n);
+                return caches.delete(n);
+            })
+        ))
+    );
+});
+
+// 3. FETCH — Hybrid strategy
 self.addEventListener('fetch', event => {
-    // Bỏ qua các yêu cầu không phải GET (VD: POST dữ liệu lên Firebase)
     if (event.request.method !== 'GET') return;
-    
-    // Bỏ qua các đường link ra bên ngoài (Firebase Auth, Database API...)
     if (!event.request.url.startsWith(self.location.origin)) return;
 
-    event.respondWith(
-        caches.match(event.request)
-            .then(cachedResponse => {
-                // Nếu tìm thấy file trong Cache -> Trả về luôn cho siêu nhanh
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
+    const url = new URL(event.request.url);
+    const isCodeFile = /\.(html|js|css|json)$/.test(url.pathname) || url.pathname === '/';
 
-                // Nếu không có trong Cache -> Chạy ra mạng tải về
-                return fetch(event.request).then(response => {
-                    // Bỏ qua nếu lỗi hoặc không hợp lệ
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
+    if (isCodeFile) {
+        // Network-first cho code
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    if (response && response.status === 200 && response.type === 'basic') {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
                     }
-                    
-                    // Clone (nhân bản) dữ liệu tải về để lưu lại vào Cache cho lần sau
-                    const responseToCache = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseToCache);
-                    });
-                    
+                    return response;
+                })
+                .catch(() => caches.match(event.request).then(r => r || new Response('Offline', { status: 503 })))
+        );
+    } else {
+        // Cache-first cho ảnh, fonts, icons
+        event.respondWith(
+            caches.match(event.request).then(cached => {
+                if (cached) return cached;
+                return fetch(event.request).then(response => {
+                    if (response && response.status === 200) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+                    }
                     return response;
                 });
             })
-    );
+        );
+    }
 });
