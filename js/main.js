@@ -2,6 +2,8 @@
  * ============================================================================
  * MAIN.JS - BỘ NÃO ĐIỀU PHỐI (CONTROLLER)
  * ============================================================================
+ * Cập nhật: Tích hợp hệ thống Color Theme System (đổi màu chủ đạo tùy ý)
+ * ============================================================================
  */
 
 // 1. IMPORT CÁC MODULE FIREBASE
@@ -18,85 +20,170 @@ import { AppState } from './store.js';
 import { escapeHTML, showToast, toTitleCase, highlightMatch, formatDiopterValue, toggleClearButtons, debounce } from './utils.js';
 import { getDB, saveToDB, getFromDB, deleteFromDB, fetchDonKinhList, createDonKinh, updateDonKinh, deleteDonKinh, fetchDropdownSettings } from './database.js';
 import { generatePrintHtml, generateWordHtml } from './templates.js';
+
 // ============================================================================
-// COLOR THEME - HỆ THỐNG MÀU CHỦ ĐẠO TÙY CHỈNH
+// COLOR THEME SYSTEM - HỆ THỐNG MÀU CHỦ ĐẠO TÙY CHỈNH
 // ============================================================================
+const COLOR_STORAGE_KEY = 'donKinhPrimaryColor';
+
 function hexToRgb(hex) {
     hex = hex.replace('#', '');
     if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    return { r: parseInt(hex.substr(0,2),16), g: parseInt(hex.substr(2,2),16), b: parseInt(hex.substr(4,2),16) };
+    return {
+        r: parseInt(hex.substr(0, 2), 16),
+        g: parseInt(hex.substr(2, 2), 16),
+        b: parseInt(hex.substr(4, 2), 16)
+    };
 }
+
 function getLuminance(hex) {
     const { r, g, b } = hexToRgb(hex);
+    // Công thức W3C perceived luminance
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
-function getContrastColor(hex) { return getLuminance(hex) > 0.55 ? '#000000' : '#ffffff'; }
-function lightenColor(hex, p = 12) {
-    const { r, g, b } = hexToRgb(hex); const a = Math.round(2.55 * p);
-    return '#' + [r,g,b].map(v => Math.min(255, v + a).toString(16).padStart(2,'0')).join('');
-}
-function darkenColor(hex, p = 12) {
-    const { r, g, b } = hexToRgb(hex); const a = Math.round(2.55 * p);
-    return '#' + [r,g,b].map(v => Math.max(0, v - a).toString(16).padStart(2,'0')).join('');
-}
-function getHoverColor(hex) { return getLuminance(hex) > 0.7 ? darkenColor(hex, 12) : lightenColor(hex, 12); }
 
+function getContrastColor(hex) {
+    return getLuminance(hex) > 0.55 ? '#000000' : '#ffffff';
+}
+
+function lightenColor(hex, percent = 12) {
+    const { r, g, b } = hexToRgb(hex);
+    const amt = Math.round(2.55 * percent);
+    return '#' + [r, g, b]
+        .map(v => Math.min(255, v + amt).toString(16).padStart(2, '0'))
+        .join('');
+}
+
+function darkenColor(hex, percent = 12) {
+    const { r, g, b } = hexToRgb(hex);
+    const amt = Math.round(2.55 * percent);
+    return '#' + [r, g, b]
+        .map(v => Math.max(0, v - amt).toString(16).padStart(2, '0'))
+        .join('');
+}
+
+function getHoverColor(hex) {
+    // Màu sáng → tối đi; màu tối → sáng lên
+    return getLuminance(hex) > 0.7 ? darkenColor(hex, 12) : lightenColor(hex, 12);
+}
+
+/**
+ * Áp dụng màu primary lên CSS variables của document
+ * @param {string|null} hex - Mã màu hex (VD: "#005cbf"), hoặc null để reset về mặc định
+ */
 function applyPrimaryColor(hex) {
+    const toggle = document.getElementById('colorToggle');
+
     if (!hex) {
-        ['--primary','--primary-hover','--primary-light','--primary-contrast'].forEach(v => document.documentElement.style.removeProperty(v));
-        localStorage.removeItem('donKinhPrimaryColor');
+        // Reset về mặc định (để :root và [data-theme="dark"] tự xử lý)
+        ['--primary', '--primary-hover', '--primary-light', '--primary-contrast']
+            .forEach(v => document.documentElement.style.removeProperty(v));
+        localStorage.removeItem(COLOR_STORAGE_KEY);
+        if (toggle) toggle.style.color = '';
         return;
     }
-    const { r, g, b } = hexToRgb(hex);
-    document.documentElement.style.setProperty('--primary', hex);
-    document.documentElement.style.setProperty('--primary-hover', getHoverColor(hex));
-    document.documentElement.style.setProperty('--primary-light', `rgba(${r}, ${g}, ${b}, 0.12)`);
-    document.documentElement.style.setProperty('--primary-contrast', getContrastColor(hex));
-    localStorage.setItem('donKinhPrimaryColor', hex);
-	/ ← THÊM: nút "MÀU SẮC" tự đổi icon theo màu đang chọn
-    const toggle = document.getElementById('colorToggle');
-    if (toggle) toggle.style.color = hex;
+
+    // Validate hex
+    const cleanHex = hex.replace('#', '').replace(/[^0-9a-fA-F]/g, '');
+    if (cleanHex.length !== 6) return;
+
+    const fullHex = '#' + cleanHex.toLowerCase();
+    const { r, g, b } = hexToRgb(fullHex);
+
+    const root = document.documentElement.style;
+    root.setProperty('--primary', fullHex);
+    root.setProperty('--primary-hover', getHoverColor(fullHex));
+    root.setProperty('--primary-light', `rgba(${r}, ${g}, ${b}, 0.12)`);
+    root.setProperty('--primary-contrast', getContrastColor(fullHex));
+
+    localStorage.setItem(COLOR_STORAGE_KEY, fullHex);
+
+    // Đổi màu icon trên nút "MÀU SẮC" để user thấy ngay đang chọn màu gì
+    if (toggle) toggle.style.color = fullHex;
 }
+
+/**
+ * Đánh dấu swatch đang active trong popover
+ */
 function updateActiveSwatch(hex) {
+    const target = (hex || '').toLowerCase();
     document.querySelectorAll('.color-swatch').forEach(sw => {
-        sw.classList.toggle('active', (sw.dataset.color || '').toLowerCase() === (hex || '').toLowerCase());
+        const swColor = (sw.dataset.color || '').toLowerCase();
+        sw.classList.toggle('active', swColor === target);
     });
 }
+
+/**
+ * Khôi phục màu đã lưu khi load trang
+ */
 function initColorTheme() {
-    const saved = localStorage.getItem('donKinhPrimaryColor');
+    const saved = localStorage.getItem(COLOR_STORAGE_KEY);
     if (saved) applyPrimaryColor(saved);
     updateActiveSwatch(saved);
 }
+
+/**
+ * Gắn toàn bộ event listeners cho Color Picker Popover
+ */
 function setupColorPicker() {
     const toggle = document.getElementById('colorToggle');
     const popover = document.getElementById('colorPopover');
     const customInput = document.getElementById('customColorInput');
     const btnReset = document.getElementById('btnResetColor');
+
     if (!toggle || !popover) return;
 
-    toggle.addEventListener('click', (e) => { e.stopPropagation(); popover.classList.toggle('show'); });
-    document.addEventListener('click', (e) => {
-        if (!popover.contains(e.target) && !toggle.contains(e.target)) popover.classList.remove('show');
+    // Toggle popover
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        popover.classList.toggle('show');
     });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') popover.classList.remove('show'); });
 
+    // Click ra ngoài → đóng
+    document.addEventListener('click', (e) => {
+        if (!popover.contains(e.target) && !toggle.contains(e.target)) {
+            popover.classList.remove('show');
+        }
+    });
+
+    // Escape → đóng
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') popover.classList.remove('show');
+    });
+
+    // Click swatch màu preset
     document.querySelectorAll('.color-swatch').forEach(sw => {
         sw.addEventListener('click', () => {
-            const c = sw.dataset.color;
-            applyPrimaryColor(c);
-            customInput.value = c;
-            updateActiveSwatch(c);
+            const color = sw.dataset.color;
+            applyPrimaryColor(color);
+            if (customInput) customInput.value = color;
+            updateActiveSwatch(color);
             showToast("Đã đổi màu chủ đạo!");
         });
     });
-    customInput.addEventListener('input', (e) => { applyPrimaryColor(e.target.value); updateActiveSwatch(e.target.value); });
-    btnReset.addEventListener('click', () => {
-        applyPrimaryColor(null);
-        customInput.value = '#111111';
-        updateActiveSwatch(null);
-        showToast("Đã khôi phục màu mặc định");
-    });
+
+    // Custom color input (real-time preview khi kéo)
+    if (customInput) {
+        customInput.addEventListener('input', (e) => {
+            applyPrimaryColor(e.target.value);
+            updateActiveSwatch(e.target.value);
+        });
+        customInput.addEventListener('change', () => {
+            showToast("Đã đổi màu chủ đạo!");
+        });
+    }
+
+    // Reset về mặc định
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            applyPrimaryColor(null);
+            if (customInput) customInput.value = '#111111';
+            updateActiveSwatch(null);
+            showToast("Đã khôi phục màu mặc định");
+        });
+    }
 }
+
 // ============================================================================
 // TỪ ĐIỂN DOM (Gom nhóm mọi truy xuất HTML vào một chỗ để dễ bảo trì)
 // ============================================================================
@@ -175,7 +262,6 @@ const DOM = {
         btnExport: document.getElementById('modalBtnExport'),
         btnExportImg: document.getElementById('modalBtnExportImg'),
         btnPrint: document.getElementById('modalBtnPrint'),
-        // THÊM 3 DÒNG NÀY:
         qrCode: document.getElementById('modalQrCode'),
         btnPreviewMobile: document.getElementById('modalBtnPreviewMobile'),
         btnClosePreviewMobile: document.getElementById('btnClosePreviewMobile')
@@ -187,15 +273,15 @@ const DOM = {
 // ============================================================================
 document.addEventListener("DOMContentLoaded", () => {
     initTheme();
-	initColorTheme();      // NEW
-    setupColorPicker();    // NEW
+    initColorTheme();       // ← MỚI: Khôi phục màu chủ đạo đã lưu
+    setupColorPicker();     // ← MỚI: Gắn sự kiện cho bộ chọn màu
     setupAuthListeners();
     setupUIEventListeners();
     setupFormEventListeners();
     setupAutocompletes();
 });
 
-// --- THEME ---
+// --- THEME (Sáng/Tối) ---
 function initTheme() {
     const themeToggle = document.getElementById('themeToggle');
     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -344,7 +430,7 @@ function setupUIEventListeners() {
     DOM.modal.btnExportImg.addEventListener('click', exportImageFromModal);
     DOM.modal.close.addEventListener('click', closeModal);
     
-    // BẮT ĐẦU THÊM MỚI: Bật/Tắt Bản xem trước Fullscreen trên điện thoại
+    // Bật/Tắt Bản xem trước Fullscreen trên điện thoại
     if(DOM.modal.btnPreviewMobile) {
         DOM.modal.btnPreviewMobile.addEventListener('click', () => {
             document.querySelector('.modal-container').classList.add('show-preview');
@@ -355,7 +441,6 @@ function setupUIEventListeners() {
             document.querySelector('.modal-container').classList.remove('show-preview');
         });
     }
-    // KẾT THÚC THÊM MỚI
     
     DOM.modal.btnEdit.addEventListener('click', () => {
         const index = DOM.modal.overlay.dataset.currentIndex;
@@ -400,17 +485,13 @@ function setupUIEventListeners() {
     const stickyAge = document.getElementById('stickyAge');
     
     window.addEventListener('scroll', function() {
-        // Chỉ kích hoạt khi biểu mẫu Form đang hiển thị
         if (DOM.views.form.style.display === 'block' && stickyHeader) {
             const nameInput = DOM.form.hoTen.value.trim();
-            
-            // Nếu đã nhập tên và cuộn qua mốc 250px (qua khỏi phần thông tin bệnh nhân đầu form)
             if (nameInput && window.scrollY > 250) {
                 stickyName.innerText = nameInput;
                 stickyAge.innerText = DOM.form.tuoi.value || '--';
                 stickyHeader.classList.add('is-visible');
             } else {
-                // Cuộn ngược lên đầu trang thì ẩn đi
                 stickyHeader.classList.remove('is-visible');
             }
         }
@@ -424,12 +505,11 @@ function setupUIEventListeners() {
         }
         const card = e.target.closest('.result-card');
         if (card && DOM.dashboard.list.contains(card)) {
-            // Chặn mở Detail nếu Context Menu đang hiện
             if (document.getElementById('hapticContextMenu') && document.getElementById('hapticContextMenu').classList.contains('show')) return;
             openDetailModal(card.getAttribute('data-index'));
         }
     });
-	// ==========================================
+    // ==========================================
     // LOGIC: KÉO ĐỂ LÀM MỚI (PULL-TO-REFRESH)
     // ==========================================
     let startY = 0; let currentY = 0; let isPulling = false;
@@ -437,13 +517,12 @@ function setupUIEventListeners() {
     const dashboardView = document.getElementById('dashboardView');
 
     document.addEventListener('touchstart', (e) => {
-        // Chỉ cho phép kéo khi đang cuộn ở tít trên cùng (scrollY === 0) và đang ở trang chủ
         if (window.scrollY === 0 && dashboardView.style.display !== 'none') {
             startY = e.touches[0].clientY;
             currentY = startY;
             isPulling = true;
             ptrSpinner.classList.remove('refreshing', 'resetting');
-            ptrSpinner.style.transition = 'none'; // Bắt đầu bám sát ngón tay
+            ptrSpinner.style.transition = 'none';
         }
     }, { passive: true });
 
@@ -452,11 +531,9 @@ function setupUIEventListeners() {
         currentY = e.touches[0].clientY;
         const pullDistance = currentY - startY;
 
-        // Nếu kéo hướng xuống dưới
         if (pullDistance > 0 && window.scrollY === 0) {
-            // Lực cản (Resistance): Kéo 10px thì vòng tròn chỉ di chuyển 4px, tạo cảm giác mút tay
             let visualPull = pullDistance * 0.4; 
-            if (visualPull > 60) visualPull = 60 + (visualPull - 60) * 0.1; // Cản cực mạnh khi kéo quá đà
+            if (visualPull > 60) visualPull = 60 + (visualPull - 60) * 0.1;
 
             ptrSpinner.style.opacity = Math.min(visualPull / 50, 1);
             ptrSpinner.style.transform = `translateX(-50%) translateY(${visualPull - 40}px) rotate(${visualPull * 3}deg)`;
@@ -468,38 +545,32 @@ function setupUIEventListeners() {
         isPulling = false;
         const pullDistance = currentY - startY;
 
-        // BẢN VÁ LỖI CỐT LÕI: Xóa sạch CSS nội tuyến (inline) do ngón tay vừa kéo tạo ra.
-        // Trả lại toàn quyền điều khiển hiệu ứng ẩn/hiện cho file style.css
         ptrSpinner.style.transform = '';
         ptrSpinner.style.opacity = '';
         ptrSpinner.style.transition = '';
 
-        // Nếu quãng đường vuốt xuống đủ dài (> 120px) -> Kích hoạt load dữ liệu
         if (pullDistance > 120 && window.scrollY === 0) {
-            ptrSpinner.classList.remove('resetting'); // Đảm bảo không dính class cũ
+            ptrSpinner.classList.remove('resetting');
             ptrSpinner.classList.add('refreshing');
             
-            // Chờ gọi dữ liệu từ Firebase
             await loadDashboardData(); 
             
-            // Giữ vòng tròn xoay thêm 0.6s để báo hiệu hoàn thành rồi giấu đi
             setTimeout(() => {
                 ptrSpinner.classList.remove('refreshing');
                 ptrSpinner.classList.add('resetting');
                 showToast("Đã cập nhật dữ liệu mới!");
             }, 600); 
         } else if (pullDistance > 0) {
-            // Kéo nhẹ chưa đủ lực -> Bỏ qua, thu vòng tròn về
             ptrSpinner.classList.remove('refreshing');
             ptrSpinner.classList.add('resetting');
         }
     });
-	// ==========================================
+    // ==========================================
     // LOGIC: ẤN GIỮ MỞ CONTEXT MENU (HAPTIC TOUCH)
     // ==========================================
     let pressTimer;
     let isLongPress = false;
-    let ctxJustOpened = false; // Cờ chặn sự kiện click ảo khi vừa thả tay
+    let ctxJustOpened = false;
     let touchStartX = 0;
     let touchStartY = 0;
     const ctxModal = document.getElementById('hapticContextMenu');
@@ -514,14 +585,13 @@ function setupUIEventListeners() {
             if (!card || DOM.dashboard.list.contains(card) === false) return;
             
             isLongPress = false;
-            // Lưu lại tọa độ lúc bắt đầu chạm
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             card.classList.add('haptic-active'); 
 
             pressTimer = setTimeout(() => {
                 isLongPress = true;
-                ctxJustOpened = true; // Bật khiên chống click ảo
+                ctxJustOpened = true;
                 
                 if (navigator.vibrate) navigator.vibrate(40); 
                 
@@ -534,7 +604,6 @@ function setupUIEventListeners() {
                 ctxModal.style.display = 'flex';
                 setTimeout(() => ctxModal.classList.add('show'), 10);
                 
-                // Tắt khiên sau 500ms (Đủ để ngón tay thả ra mà không bị nhận nhầm)
                 setTimeout(() => { ctxJustOpened = false; }, 500);
 
             }, 450); 
@@ -552,11 +621,9 @@ function setupUIEventListeners() {
         });
 
         document.addEventListener('touchmove', (e) => {
-            // Tính toán quãng đường ngón tay bị xê dịch (chống rung tay)
             const moveX = Math.abs(e.touches[0].clientX - touchStartX);
             const moveY = Math.abs(e.touches[0].clientY - touchStartY);
             
-            // Dung sai 10px: Chỉ hủy lệnh ấn giữ nếu ngón tay trượt đi thực sự (> 10px)
             if (moveX > 10 || moveY > 10) {
                 clearTimeout(pressTimer);
                 const activeCard = document.querySelector('.result-card.haptic-active');
@@ -564,18 +631,14 @@ function setupUIEventListeners() {
             }
         }, { passive: true });
 
-        // Tắt Menu khi bấm ra ngoài vùng tối
         ctxModal.addEventListener('click', (e) => {
-            // NẾU VỪA MỚI THẢ TAY RA -> CHẶN ĐÓNG POPUP
             if (ctxJustOpened) return; 
-            
             if (e.target === ctxModal) {
                 ctxModal.classList.remove('show');
                 setTimeout(() => ctxModal.style.display = 'none', 250);
             }
         });
 
-        // Xử lý Sự kiện Bấm Nút bên trong Menu
         ctxEdit.addEventListener('click', () => {
             ctxModal.classList.remove('show');
             setTimeout(() => { ctxModal.style.display = 'none'; startEditing(currentCtxIndex); }, 250);
@@ -602,7 +665,7 @@ function setupUIEventListeners() {
         if (e.target.classList.contains('toast')) {
             toastStartX = e.touches[0].clientX;
             activeToast = e.target;
-            activeToast.style.transition = 'none'; // Bám sát ngón tay
+            activeToast.style.transition = 'none';
         }
     }, { passive: true });
 
@@ -611,10 +674,9 @@ function setupUIEventListeners() {
         const currentX = e.touches[0].clientX;
         const deltaX = currentX - toastStartX;
         
-        // Chỉ cho phép vuốt sang phải
         if (deltaX > 0) {
             activeToast.style.transform = `translateX(${deltaX}px)`;
-            activeToast.style.opacity = 1 - (deltaX / 200); // Kéo càng xa càng mờ
+            activeToast.style.opacity = 1 - (deltaX / 200);
         }
     }, { passive: true });
 
@@ -625,14 +687,12 @@ function setupUIEventListeners() {
 
         activeToast.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
         
-        // Nếu kéo qua một nửa (khoảng 80px), tạt văng nó ra ngoài luôn
         if (deltaX > 80) {
             activeToast.style.transform = 'translateX(120%)';
             activeToast.style.opacity = 0;
             const toastToRemove = activeToast;
             setTimeout(() => { if (toastToRemove.parentNode) toastToRemove.parentNode.removeChild(toastToRemove); }, 200);
         } else {
-            // Vuốt hụt lực -> Bật nảy về vị trí cũ
             activeToast.style.transform = 'translateX(0)';
             activeToast.style.opacity = 1;
         }
@@ -641,19 +701,19 @@ function setupUIEventListeners() {
 }
 
 function setupFormEventListeners() {
-	// BẮT ĐẦU: KÍCH HOẠT BÀN PHÍM THÔNG MINH CHO MOBILE
+    // KÍCH HOẠT BÀN PHÍM THÔNG MINH CHO MOBILE
     document.querySelectorAll('.number-input').forEach(input => {
         if(input.id === 'sdt') {
-            input.setAttribute('inputmode', 'tel'); // Bàn phím gọi điện cho ô SĐT
+            input.setAttribute('inputmode', 'tel');
         } else {
-            input.setAttribute('inputmode', 'numeric'); // Bàn phím số nguyên cho ô Tuổi, PD
-            input.setAttribute('pattern', '[0-9]*'); // Kích hoạt bàn phím số to trên iOS
+            input.setAttribute('inputmode', 'numeric');
+            input.setAttribute('pattern', '[0-9]*');
         }
     });
     document.querySelectorAll('.diopter-input').forEach(input => {
-        input.setAttribute('inputmode', 'decimal'); // Bàn phím số thập phân (có dấu chấm) cho Độ Cầu, Độ Trụ
+        input.setAttribute('inputmode', 'decimal');
     });
-    // KẾT THÚC: BÀN PHÍM THÔNG MINH
+
     DOM.form.ngayKham.valueAsDate = new Date();
     
     DOM.form.hoTen.addEventListener('input', function() {
@@ -786,38 +846,34 @@ function setupFormEventListeners() {
         }
     });
     DOM.form.kcDongTu2.addEventListener('input', function() { this.dataset.manual = this.value.trim() !== "" ? "true" : "false"; });
-// --- BẮT ĐẦU: LOGIC SMART CHIPS HẸN TÁI KHÁM ---
+    
+    // --- LOGIC SMART CHIPS HẸN TÁI KHÁM ---
     document.querySelectorAll('.btn-chip').forEach(chip => {
         chip.addEventListener('click', function() {
             const ghiChuInput = document.getElementById('ghiChu');
             const currentGhiChu = ghiChuInput.value.trim();
             
-            // 1. Lấy ngày khám gốc từ form (hoặc hôm nay nếu form trống)
             let baseDateInput = document.getElementById('ngayKham').value;
             let baseDate = baseDateInput ? new Date(baseDateInput) : new Date();
             
-            // 2. Lấy số ngày/tháng cần cộng từ thuộc tính data của nút
             const addDays = parseInt(this.getAttribute('data-days'));
             const addMonths = parseInt(this.getAttribute('data-months'));
             
             if (addDays) baseDate.setDate(baseDate.getDate() + addDays);
             if (addMonths) baseDate.setMonth(baseDate.getMonth() + addMonths);
             
-            // 3. Format lại ngày thành định dạng chuẩn DD/MM/YYYY
             const dd = String(baseDate.getDate()).padStart(2, '0');
             const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
             const yyyy = baseDate.getFullYear();
             
             const textToAppend = `Hẹn tái khám sau ${this.innerText.replace('+', '')} (ngày ${dd}/${mm}/${yyyy}).`;
             
-            // 4. Xử lý chuỗi thông minh: Nếu đã có lịch hẹn cũ thì thay thế, nếu chưa có thì nối thêm
             if (currentGhiChu.includes("Hẹn tái khám")) {
                 ghiChuInput.value = currentGhiChu.replace(/Hẹn tái khám.*/, textToAppend).trim();
             } else {
                 ghiChuInput.value = currentGhiChu ? `${currentGhiChu} - ${textToAppend}` : textToAppend;
             }
             
-            // 5. Kích hoạt sự kiện input để hệ thống tự động lưu nháp (Draft) và hiện nút Xóa (Clear Button)
             ghiChuInput.dispatchEvent(new Event('input')); 
             showToast(`Đã thêm lịch: ${dd}/${mm}/${yyyy}`);
         });
@@ -844,7 +900,7 @@ async function loadDashboardData() {
     } catch (e) { console.warn("Chưa có cache cục bộ."); }
 
     try {
-        const results = await fetchDonKinhList(1000); // Giới hạn 300 bản ghi mới nhất chống treo
+        const results = await fetchDonKinhList(1000);
         AppState.dashboardAllData = results;
         const newDataString = JSON.stringify(results);
         
@@ -933,15 +989,12 @@ function renderDashboardMore(dataArray) {
 }
 
 function searchKinhDashboard() {
-    // 1. Lấy từ khóa người dùng gõ
     const rawQuery = DOM.dashboard.searchInput.value;
     const queryText = rawQuery.trim().toLowerCase();
     AppState.currentSearchQuery = queryText;
     
-    // 2. Ẩn/Hiện nút dấu X (xóa text tìm kiếm)
     DOM.dashboard.searchClear.style.display = rawQuery.length > 0 ? 'flex' : 'none';
 
-    // 3. Nếu ô tìm kiếm trống, hiển thị lại toàn bộ danh sách
     if(!queryText) {
         AppState.currentSearchResults = AppState.dashboardAllData;
         AppState.dashboardRenderCount = 0;
@@ -950,13 +1003,11 @@ function searchKinhDashboard() {
         return;
     }
     
-    // 4. Nếu có từ khóa, lọc theo Tên hoặc Số điện thoại
     const filtered = AppState.dashboardAllData.filter(data => {
         return (data.hoTen || "").toLowerCase().includes(queryText) || 
                (data.sdt || "").includes(queryText);
     });
     
-    // 5. Render kết quả ra màn hình
     AppState.currentSearchResults = filtered;
     AppState.dashboardRenderCount = 0;
     DOM.dashboard.list.innerHTML = "";
@@ -967,13 +1018,12 @@ function searchKinhDashboard() {
 // FORM LOGIC
 // ============================================================================
 function showFormView() {
-    window.scrollTo(0, 0); // Ép cuộn lên đỉnh màn hình ngay lập tức
+    window.scrollTo(0, 0);
     DOM.views.dashboard.classList.add('slide-out-left');
     DOM.views.form.style.display = 'block';
     DOM.views.form.classList.add('slide-in-right');
     resetForm();
     
-    // Đợi Animation chạy xong rồi mới giấu Dashboard đi
     setTimeout(() => {
         DOM.views.dashboard.style.display = 'none';
         DOM.views.dashboard.classList.remove('slide-out-left');
@@ -982,14 +1032,13 @@ function showFormView() {
 }
 
 function showDashboardView() {
-    window.scrollTo(0, 0); // Ép cuộn lên đỉnh màn hình khi quay lại danh sách
+    window.scrollTo(0, 0);
     DOM.views.dashboard.style.display = 'block';
     DOM.views.dashboard.classList.add('slide-in-left');
     DOM.views.form.classList.add('slide-out-right');
     loadDashboardData(); 
     checkDraftStatus();
     
-    // Đợi Form trượt ra ngoài xong rồi mới giấu đi
     setTimeout(() => {
         DOM.views.form.style.display = 'none';
         DOM.views.dashboard.classList.remove('slide-in-left');
@@ -1016,7 +1065,6 @@ function resetForm() {
     toggleFormLock(false); 
     checkDraftStatus();
     
-    // SỬA DÒNG NÀY: Đợi hiệu ứng trượt trang (350ms) kết thúc rồi mới focus để tránh giật lag
     setTimeout(() => { DOM.form.hoTen.focus(); }, 360);
 }
 
@@ -1404,9 +1452,11 @@ function openDetailModal(index) {
         });
 
         const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(dataObj)))));
-        const _savedColor = localStorage.getItem('donKinhPrimaryColor');
-		const _colorParam = _savedColor ? `&c=${_savedColor.replace('#', '')}` : '';
-		const safeQrData = `https://donkinh-eea6b.web.app/don-kinh.html?data=${encodedData}${_colorParam}`;
+        
+        // ĐỒNG BỘ MÀU CHỦ ĐẠO VÀO URL QR
+        const _savedColor = localStorage.getItem(COLOR_STORAGE_KEY);
+        const _colorParam = _savedColor ? `&c=${_savedColor.replace('#', '')}` : '';
+        const safeQrData = `https://donkinh-eea6b.web.app/don-kinh.html?data=${encodedData}${_colorParam}`;
         
         // Tạo viền trắng bằng CSS tĩnh, để padding của thư viện = 0 giúp lõi QR to nhất có thể
         DOM.modal.qrCode.style.padding = "4px";
@@ -1423,7 +1473,7 @@ function openDetailModal(index) {
     DOM.modal.diag.innerText = data.chanDoan || 'Chưa có dữ liệu chẩn đoán';
     
     const pd = (data.kcDongTu_1 || data.kcDongTu || "---").replace('mm','').trim();
-    DOM.modal.grid.innerHTML = `<div class="detail-grid"><div class="detail-eye-section"><div class="detail-eye-title" style="color: var(--accent-color);">MẮT PHẢI (MP)</div><div class="detail-row"><span>Cầu (SPH)</span><span class="detail-value">${data.mp_cau || "---"}</span></div><div class="detail-row"><span>Trụ (CYL)</span><span class="detail-value">${data.mp_tru || "---"}</span></div><div class="detail-row"><span>Trục (AXIS)</span><span class="detail-value">${data.mp_truc || "---"}</span></div><div class="detail-row"><span>Thị lực</span><span class="detail-value">${data.mp_gc || "---"}</span></div></div><div class="detail-eye-section"><div class="detail-eye-title">MẮT TRÁI (MT)</div><div class="detail-row"><span>Cầu (SPH)</span><span class="detail-value">${data.mt_cau || "---"}</span></div><div class="detail-row"><span>Trụ (CYL)</span><span class="detail-value">${data.mt_tru || "---"}</span></div><div class="detail-row"><span>Trục (AXIS)</span><span class="detail-value">${data.mt_truc || "---"}</span></div><div class="detail-row"><span>Thị lực</span><span class="detail-value">${data.mt_gc || "---"}</span></div></div></div><div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-light); font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;"><span>Khoảng cách đồng tử (PD)</span><span style="color: var(--text-main); font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 800;">${pd} mm</span></div>`;
+    DOM.modal.grid.innerHTML = `<div class="detail-grid"><div class="detail-eye-section"><div class="detail-eye-title" style="color: var(--primary);">MẮT PHẢI (MP)</div><div class="detail-row"><span>Cầu (SPH)</span><span class="detail-value">${data.mp_cau || "---"}</span></div><div class="detail-row"><span>Trụ (CYL)</span><span class="detail-value">${data.mp_tru || "---"}</span></div><div class="detail-row"><span>Trục (AXIS)</span><span class="detail-value">${data.mp_truc || "---"}</span></div><div class="detail-row"><span>Thị lực</span><span class="detail-value">${data.mp_gc || "---"}</span></div></div><div class="detail-eye-section"><div class="detail-eye-title">MẮT TRÁI (MT)</div><div class="detail-row"><span>Cầu (SPH)</span><span class="detail-value">${data.mt_cau || "---"}</span></div><div class="detail-row"><span>Trụ (CYL)</span><span class="detail-value">${data.mt_tru || "---"}</span></div><div class="detail-row"><span>Trục (AXIS)</span><span class="detail-value">${data.mt_truc || "---"}</span></div><div class="detail-row"><span>Thị lực</span><span class="detail-value">${data.mt_gc || "---"}</span></div></div></div><div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-light); font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;"><span>Khoảng cách đồng tử (PD)</span><span style="color: var(--text-main); font-family: 'Courier New', Courier, monospace; font-size: 15px; font-weight: 800;">${pd} mm</span></div>`;
 
     DOM.modal.overlay.dataset.currentIndex = index; 
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -1543,7 +1593,7 @@ export function exportImageFromHtmlString(htmlContent, fileName) {
             scale: hdScale, 
             useCORS: true, 
             backgroundColor: '#ffffff',
-            logging: false // Tắt log để render nhanh hơn một chút
+            logging: false
         }).then(canvas => {
             
             // XUẤT RA PNG THAY VÌ JPEG
@@ -1561,7 +1611,7 @@ export function exportImageFromHtmlString(htmlContent, fileName) {
                 } else {
                     forceDownloadBlob(blob, safeFileName, container);
                 }
-            }, 'image/png'); // Mặc định PNG không bị nén mất viền chữ
+            }, 'image/png');
             
         }).catch(err => {
             console.error("Lỗi xuất ảnh:", err);
@@ -1571,6 +1621,7 @@ export function exportImageFromHtmlString(htmlContent, fileName) {
         });
     }, 500); 
 }
+
 // Đăng ký Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
