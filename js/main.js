@@ -53,6 +53,9 @@ function applyPrimaryColor(hex) {
     document.documentElement.style.setProperty('--primary-light', `rgba(${r}, ${g}, ${b}, 0.12)`);
     document.documentElement.style.setProperty('--primary-contrast', getContrastColor(hex));
     localStorage.setItem('donKinhPrimaryColor', hex);
+	/ ← THÊM: nút "MÀU SẮC" tự đổi icon theo màu đang chọn
+    const toggle = document.getElementById('colorToggle');
+    if (toggle) toggle.style.color = hex;
 }
 function updateActiveSwatch(hex) {
     document.querySelectorAll('.color-swatch').forEach(sw => {
