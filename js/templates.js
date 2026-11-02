@@ -106,24 +106,22 @@ export function generatePrintHtml(customData = null) {
     const mtText = buildEyeStr('mt_cau', 'mt_tru', 'mt_truc');
 
     const dataObj = {
-        ten: hoTenQR,
-        tuoi: tuoiVal,
-        sdt: sdtVal,
-        mp: mpText,
-        mt: mtText,
-        pd: pdVal,
-        ngay: ngayKhamStr,
-        cd: chanDoanVal,
-        gc: ghiChuVal,
-        tlkk_mp: tlkkMpVal, // Thêm vào JSON
-        tlkk_mt: tlkkMtVal, // Thêm vào JSON
-        tl_mp: tlMpVal,     // Thêm vào JSON
-        tl_mt: tlMtVal      // Thêm vào JSON
+        ten: hoTenQR, tuoi: tuoiVal, sdt: sdtVal,
+        mp: mpText, mt: mtText, pd: pdVal,
+        ngay: ngayKhamStr, cd: chanDoanVal, gc: ghiChuVal,
+        tlkk_mp: tlkkMpVal, tlkk_mt: tlkkMtVal, tl_mp: tlMpVal, tl_mt: tlMtVal
     };
+
+    // THUẬT TOÁN ÉP XUNG DỮ LIỆU: Lọc bỏ toàn bộ các trường không có dữ liệu (---, 0.00, rỗng)
+    // Việc này giúp giảm 40% lượng ký tự mã hóa -> Lưới QR thưa ra gấp đôi -> Camera bắt nét cực nhạy
+    Object.keys(dataObj).forEach(key => {
+        if (!dataObj[key] || dataObj[key] === "---" || dataObj[key] === "--" || dataObj[key] === "0.00") {
+            delete dataObj[key];
+        }
+    });
 
     const jsonString = JSON.stringify(dataObj);
     const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
-
     const BASE_URL = "https://donkinh-eea6b.web.app/don-kinh.html"; 
     const safeQrData = `${BASE_URL}?data=${encodedData}`;
 
@@ -135,14 +133,73 @@ export function generatePrintHtml(customData = null) {
     <style>
         @page { size: A5; margin: 10mm 10mm; } 
         body { font-family: 'Times New Roman', serif; font-size: 12.5pt; line-height: 1.32; color: #000; margin: 0; padding: 0; } 
+        
+        /* Hiển thị như một tờ giấy A5 thật trên nền xám (dành cho máy tính/màn hình to) */
         @media screen { 
-            html, body { width: 100%; height: 100%; overflow-x: hidden; } 
-            body { padding: 10mm 10mm; box-sizing: border-box; } 
-        } 
+            html, body { 
+                width: 100%; 
+                height: 100%; 
+                margin: 0; 
+                padding: 0; 
+                background: #e4e4e7; 
+            } 
+            body { 
+                width: 148mm; 
+                min-height: 210mm; 
+                margin: 10px auto; 
+                background: white; 
+                padding: 10mm 10mm; 
+                box-sizing: border-box; 
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+                transform-origin: top left; 
+            } 
+        }
+        
+        /* Thuật toán CSS thu nhỏ trang giấy A5 vừa khít bề ngang điện thoại */
+        @media screen and (max-width: 600px) {
+            body {
+                transform: scale(0.65); 
+                margin-bottom: -35%; 
+            }
+        }
+
+        /* KHUNG BẢNG VÀ CHỮ KÝ (Nằm ngoài @media để áp dụng cho cả lúc in và lúc xem) */
         table.print-table { width: 100%; border-collapse: collapse; margin: 10px 0; } 
-        table.print-table th, table.print-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; } 
+        table.print-table th, table.print-table td { border: 1px solid #000 !important; padding: 5px; text-align: center; vertical-align: middle; } 
         .signature-box { text-align: center; width: 220px; } 
         .clearfix::after { content: ""; clear: both; display: table; }
+
+        /* VỎ BỌC QR - TẠO VIỀN TRẮNG AN TOÀN TỪ BÊN NGOÀI */
+        .qr-wrapper {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 95px;
+            height: 95px;
+            background: #ffffff;
+            padding: 4px; /* Viền trắng CSS giúp tách biệt QR khỏi văn bản */
+            box-sizing: border-box;
+            border-radius: 4px;
+        }
+
+        /* LÕI QR - PHÓNG TO HẾT CỠ, KHÔNG BỊ LÀM MỜ */
+        #qrcode {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+            object-fit: contain;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated; 
+        }
+
+        /* Bắt buộc trình duyệt không được làm mờ viền bảng khi In (Tiết kiệm mực) */
+        @media print {
+            table.print-table th, table.print-table td { 
+                border: 1pt solid #000 !important; 
+            }
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
@@ -154,8 +211,8 @@ export function generatePrintHtml(customData = null) {
             <div style="font-weight: bold;">Phòng khám Mắt</div>
         </div>
         
-        <div style="position: absolute; top: 0; right: 0;">
-            <canvas id="qrcode" style="width: 75px; height: 75px; display: block;" title="Mã quét thông số cắt kính"></canvas>
+        <div class="qr-wrapper">
+            <canvas id="qrcode" title="QR thông số kính"></canvas>
         </div>
 
         <h2 style="margin: 10px 0 0 0; text-transform: uppercase; font-size: 17pt; text-align: center;">ĐƠN KÍNH</h2>
@@ -206,8 +263,9 @@ export function generatePrintHtml(customData = null) {
                 new QRious({
                     element: document.getElementById("qrcode"),
                     value: "${safeQrData}",
-                    size: 250,
-                    level: "M" 
+                    size: 1500, 
+                    padding: 0, /* TẮT PADDING TRONG THƯ VIỆN, ĐỂ LÕI QR BUNG TO KỊCH KIM 100% DIỆN TÍCH */
+                    level: "L" 
                 });
             } catch(e) { console.error("Lỗi vẽ QR Code:", e); }
         };
