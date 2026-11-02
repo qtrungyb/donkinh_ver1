@@ -2,7 +2,27 @@
  * ============================================================================
  * TEMPLATES.JS - CHỨA CÁC MẪU HTML XUẤT FILE (IN ẤN & WORD)
  * ============================================================================
+ * Cập nhật: Đồng bộ mã màu primary vào URL QR khi in ấn / xuất ảnh
+ * ============================================================================
  */
+
+const COLOR_STORAGE_KEY = 'donKinhPrimaryColor';
+
+/**
+ * Đọc mã màu primary đã lưu, trả về chuỗi hex 6 ký tự (không có #)
+ * hoặc chuỗi rỗng nếu chưa có / không hợp lệ.
+ * Bọc try/catch vì localStorage có thể bị chặn trong iframe sandbox.
+ */
+function _getSavedColorHex() {
+    try {
+        const saved = localStorage.getItem(COLOR_STORAGE_KEY);
+        if (!saved) return "";
+        const clean = saved.replace('#', '').replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+        return clean.length === 6 ? clean : "";
+    } catch (e) {
+        return "";
+    }
+}
 
 /**
  * 1. Hàm tạo chuỗi HTML để In khổ A5 / Xuất Ảnh
@@ -84,8 +104,8 @@ export function generatePrintHtml(customData = null) {
     // Thu thập thêm Thị lực trước và sau kính
     const tlkkMpVal = String(getVal('tlkk_mp')).trim() || "---";
     const tlkkMtVal = String(getVal('tlkk_mt')).trim() || "---";
-    const tlMpVal = String(getVal('mp_gc')).trim() || "---"; // Lấy từ cột Thị lực bảng 1
-    const tlMtVal = String(getVal('mt_gc')).trim() || "---"; // Lấy từ cột Thị lực bảng 1
+    const tlMpVal = String(getVal('mp_gc')).trim() || "---";
+    const tlMtVal = String(getVal('mt_gc')).trim() || "---";
     
     const buildEyeStr = (cauId, truId, trucId) => {
         const cau = String(getVal(cauId)).trim();
@@ -123,15 +143,13 @@ export function generatePrintHtml(customData = null) {
     const jsonString = JSON.stringify(dataObj);
     const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
     const BASE_URL = "https://donkinh-eea6b.web.app/don-kinh.html"; 
-    // Đồng bộ màu primary hiện tại vào link QR để trang đơn kính mở ra cùng tông màu
-    let _colorSuffix = "";
-    try {
-        const _savedC = localStorage.getItem('donKinhPrimaryColor');
-        if (_savedC) {
-            const _cleanC = _savedC.replace('#','').replace(/[^0-9a-fA-F]/g,'').slice(0,6);
-            if (_cleanC.length === 6) _colorSuffix = `&c=${_cleanC}`;
-        }
-    } catch(e) { /* localStorage có thể bị chặn ở iframe sandbox */ }
+    
+    // ★ CẬP NHẬT: Đồng bộ mã màu primary vào URL QR (đọc từ localStorage lúc generate)
+    //    - Nếu user đã chọn màu -> thêm &c=hex
+    //    - Nếu chưa chọn (mặc định đen/trắng) -> không thêm, don-kinh.html sẽ tự dùng mặc định
+    //    - Bọc try/catch vì localStorage có thể bị chặn khi chạy trong iframe sandbox
+    const _colorHex = _getSavedColorHex();
+    const _colorSuffix = _colorHex ? `&c=${_colorHex}` : "";
     const safeQrData = `${BASE_URL}?data=${encodedData}${_colorSuffix}`;
 
     return `<!DOCTYPE html>
