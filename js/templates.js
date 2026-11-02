@@ -123,7 +123,16 @@ export function generatePrintHtml(customData = null) {
     const jsonString = JSON.stringify(dataObj);
     const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonString))));
     const BASE_URL = "https://donkinh-eea6b.web.app/don-kinh.html"; 
-    const safeQrData = `${BASE_URL}?data=${encodedData}`;
+    // Đồng bộ màu primary hiện tại vào link QR để trang đơn kính mở ra cùng tông màu
+    let _colorSuffix = "";
+    try {
+        const _savedC = localStorage.getItem('donKinhPrimaryColor');
+        if (_savedC) {
+            const _cleanC = _savedC.replace('#','').replace(/[^0-9a-fA-F]/g,'').slice(0,6);
+            if (_cleanC.length === 6) _colorSuffix = `&c=${_cleanC}`;
+        }
+    } catch(e) { /* localStorage có thể bị chặn ở iframe sandbox */ }
+    const safeQrData = `${BASE_URL}?data=${encodedData}${_colorSuffix}`;
 
     return `<!DOCTYPE html>
 <html lang="vi">
